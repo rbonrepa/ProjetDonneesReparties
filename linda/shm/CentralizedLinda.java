@@ -21,10 +21,13 @@ public class CentralizedLinda implements Linda {
     public void write(Tuple t) {
         listeTuples.add(t);
 
-        int i = 0;
+        //Ce code va débloquer un thread en attente de read ou take en releasant la sémaphore
+        //associée
+        int i = 0; 
         while (i < listeSemaphores.size()) {
             if (listeSemaphores.get(i).tuple.matches(t)) {
                 listeSemaphores.get(i).semaphore.release();
+                i = listeSemaphores.size();
             }
             i++;
         }
@@ -32,45 +35,59 @@ public class CentralizedLinda implements Linda {
 
     @Override
     public Tuple take(Tuple template) {
-        int index_tuple = rechercher(template);
-        if (index_tuple == -1) {   //Cad n'est pas dans la liste de tuples
-            Semaphore semaphore = new Semaphore(0);
-            SemaphoreTemplate semtemplate = new SemaphoreTemplate(semaphore, template);
-            listeSemaphores.add(semtemplate);
-            semaphore.acquire();
-            listeSemaphores.remove(semtemplate);
-        } //Sinon l'element est deja present
-        return listeTuples.get(index_tuple);
+        Tuple element = attente_bloquante(template);
+        listeTuples.remove(element);
+        return element;
     }
 
     @Override
     public Tuple read(Tuple template) {
-        // TODO Auto-generated method stub
-        return null;
+        Tuple element = attente_bloquante(template);
+        return element;
     }
 
     @Override
     public Tuple tryTake(Tuple template) {
-        // TODO Auto-generated method stub
-        return null;
+        int index_tuple = rechercher(template);
+        if (index_tuple == -1) {
+            return null;
+        } else {
+            listeTuples.remove(index_tuple);
+            return listeTuples.get(index_tuple);
+        }
     }
 
     @Override
     public Tuple tryRead(Tuple template) {
-        // TODO Auto-generated method stub
-        return null;
+        int index_tuple = rechercher(template);
+        if (index_tuple == -1) {
+            return null;
+        } else {
+            return listeTuples.get(index_tuple);
+        }
     }
 
     @Override
     public Collection<Tuple> takeAll(Tuple template) {
-        // TODO Auto-generated method stub
-        return null;
+        ArrayList<Tuple> collection = new ArrayList<Tuple>();
+        int index_tuple = rechercher(template);
+        while (index_tuple != -1) { //Tant qu'on trouve encore des elements matchant avec le motif
+            collection.add(listeTuples.get(index_tuple));
+            listeTuples.remove(index_tuple);
+            index_tuple = rechercher(template);
+        }
+        return collection;
     }
 
     @Override
     public Collection<Tuple> readAll(Tuple template) {
-        // TODO Auto-generated method stub
-        return null;
+        ArrayList<Tuple> collection = new ArrayList<Tuple>();
+        int index_tuple = rechercher(template);
+        while (index_tuple != -1) { //Tant qu'on trouve encore des elements matchant avec le motif
+            collection.add(listeTuples.get(index_tuple));
+            index_tuple = rechercher(template);
+        }
+        return collection;
     }
 
     @Override
@@ -85,7 +102,28 @@ public class CentralizedLinda implements Linda {
         
     }
 
-    // TO BE COMPLETED
+    /**
+     * @param template
+     * @return l'index de l'element à read ou take
+     */
+    private Tuple attente_bloquante(Tuple template) {
+        int index_tuple = rechercher(template);
+        if (index_tuple == -1) {   //Aucun tuple n'est associé à ce template dans la liste de tuples
+            Semaphore semaphore = new Semaphore(0);
+            SemaphoreTemplate semtemplate = new SemaphoreTemplate(semaphore, template);
+            listeSemaphores.add(semtemplate);
+            try {
+                semaphore.acquire();  //Bloquant
+            } catch (InterruptedException e) {e.printStackTrace();}
+            index_tuple = rechercher(template);
+            listeSemaphores.remove(semtemplate);
+        } //Sinon l'element est deja present
+        return listeTuples.get(index_tuple);
+    }
 
+    private int rechercher(Tuple template) {
+        //TODO
+        return 0;
+    }
 
 }
