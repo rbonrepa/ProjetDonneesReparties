@@ -122,7 +122,10 @@ public class CentralizedLinda implements Linda {
     }
 
     private int rechercher(Tuple template) {
-        //TODO
+        int i = 0;
+        while (i < listeTuples.size() && listeTuples.get(i).matches(template)) {
+            i++;
+        }
         return 0;
     }
 
