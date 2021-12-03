@@ -11,7 +11,7 @@ import java.util.concurrent.Semaphore;
 /** Shared memory implementation of Linda. */
 public class CentralizedLinda implements Linda {
 
-    ArrayList<Tuple> listeTuples = new ArrayList<Tuple>();
+    ListeTuples listeTuples = new ListeTuples();
     ArrayList<SemaphoreTemplate> listeSemaphores = new ArrayList<SemaphoreTemplate>();
 	
     public CentralizedLinda() {
@@ -21,12 +21,12 @@ public class CentralizedLinda implements Linda {
     public void write(Tuple t) {
         listeTuples.add(t);
 
-        //Ce code va débloquer un thread en attente de read ou take en releasant la sémaphore
-        //associée
+        //Ce bloc va débloquer un thread en attente de read ou take en releasant la sémaphore
+        //associée si elle vient d'être ajoutée
         int i = 0; 
         while (i < listeSemaphores.size()) {
-            if (listeSemaphores.get(i).tuple.matches(t)) {
-                listeSemaphores.get(i).semaphore.release();
+            if (listeSemaphores.get(i).getTuple().matches(t)) {
+                listeSemaphores.get(i).getSemaphore().release();
                 i = listeSemaphores.size();
             }
             i++;
@@ -35,46 +35,49 @@ public class CentralizedLinda implements Linda {
 
     @Override
     public Tuple take(Tuple template) {
-        Tuple element = attente_bloquante(template);
-        listeTuples.remove(element);
-        return element;
+        RetourRecherche retourRecherche = attente_bloquante(template);
+        Tuple resultat = listeTuples.get(retourRecherche); //On stock le resultat avant de l'enlever de la liste
+        listeTuples.remove(retourRecherche);
+        return resultat;
     }
 
     @Override
     public Tuple read(Tuple template) {
-        Tuple element = attente_bloquante(template);
-        return element;
+        RetourRecherche retourRecherche = attente_bloquante(template);
+        return listeTuples.get(retourRecherche);
     }
 
     @Override
     public Tuple tryTake(Tuple template) {
-        int index_tuple = rechercher(template);
-        if (index_tuple == -1) {
+        RetourRecherche retour_recherche = listeTuples.rechercher(template); //On prend l'index du tuple au motif recherché
+        if (!retour_recherche.ATrouveResultat()) { //Le tuple n'est pas présent
             return null;
-        } else {
-            listeTuples.remove(index_tuple);
-            return listeTuples.get(index_tuple);
+        } else { //on a trouvé un tuple, on le retire de la liste et on le return
+            Tuple resultat = listeTuples.get(retour_recherche);
+            listeTuples.remove(retour_recherche);
+            return resultat;
         }
     }
 
     @Override
     public Tuple tryRead(Tuple template) {
-        int index_tuple = rechercher(template);
-        if (index_tuple == -1) {
+        RetourRecherche retourRecherche = listeTuples.rechercher(template);
+        if (!retourRecherche.ATrouveResultat()) {
             return null;
         } else {
-            return listeTuples.get(index_tuple);
+            return listeTuples.get(retourRecherche);
         }
     }
 
     @Override
     public Collection<Tuple> takeAll(Tuple template) {
         ArrayList<Tuple> collection = new ArrayList<Tuple>();
-        int index_tuple = rechercher(template);
-        while (index_tuple != -1) { //Tant qu'on trouve encore des elements matchant avec le motif
-            collection.add(listeTuples.get(index_tuple));
-            listeTuples.remove(index_tuple);
-            index_tuple = rechercher(template);
+        RetourRecherche retourRecherche = listeTuples.rechercher(template);
+        while (!retourRecherche.ATrouveResultat()) { 
+            //Tant qu'on trouve encore des elements matchant avec le motif
+            collection.add(listeTuples.get(retourRecherche));
+            listeTuples.remove(retourRecherche);
+            retourRecherche = listeTuples.rechercher(template);
         }
         return collection;
     }
@@ -82,10 +85,11 @@ public class CentralizedLinda implements Linda {
     @Override
     public Collection<Tuple> readAll(Tuple template) {
         ArrayList<Tuple> collection = new ArrayList<Tuple>();
-        int index_tuple = rechercher(template);
-        while (index_tuple != -1) { //Tant qu'on trouve encore des elements matchant avec le motif
-            collection.add(listeTuples.get(index_tuple));
-            index_tuple = rechercher(template);
+        RetourRecherche retourRecherche = listeTuples.rechercher(template);
+        while (!retourRecherche.ATrouveResultat()) {
+            //Tant qu'on trouve encore des elements matchant avec le motif
+            collection.add(listeTuples.get(retourRecherche));
+            retourRecherche = listeTuples.rechercher(template);
         }
         return collection;
     }
@@ -106,27 +110,19 @@ public class CentralizedLinda implements Linda {
      * @param template
      * @return l'index de l'element à read ou take
      */
-    private Tuple attente_bloquante(Tuple template) {
-        int index_tuple = rechercher(template);
-        if (index_tuple == -1) {   //Aucun tuple n'est associé à ce template dans la liste de tuples
+    private RetourRecherche attente_bloquante(Tuple template) {
+        RetourRecherche retourRecherche = listeTuples.rechercher(template);
+        if (retourRecherche.ATrouveResultat()) {   //Aucun tuple n'est associé à ce template dans la liste de tuples
             Semaphore semaphore = new Semaphore(0);
             SemaphoreTemplate semtemplate = new SemaphoreTemplate(semaphore, template);
             listeSemaphores.add(semtemplate);
             try {
                 semaphore.acquire();  //Bloquant
             } catch (InterruptedException e) {e.printStackTrace();}
-            index_tuple = rechercher(template);
+            retourRecherche = listeTuples.rechercher(template);
             listeSemaphores.remove(semtemplate);
         } //Sinon l'element est deja present
-        return listeTuples.get(index_tuple);
-    }
-
-    private int rechercher(Tuple template) {
-        int i = 0;
-        while (i < listeTuples.size() && listeTuples.get(i).matches(template)) {
-            i++;
-        }
-        return 0;
+        return retourRecherche;
     }
 
 }

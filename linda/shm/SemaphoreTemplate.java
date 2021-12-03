@@ -11,4 +11,12 @@ public class SemaphoreTemplate {
         this.semaphore = s;
         this.tuple = t;
     }
+
+    public Semaphore getSemaphore() {
+        return this.semaphore;
+    }
+
+    public Tuple getTuple() {
+        return this.tuple;
+    }
 }
