@@ -1,20 +1,19 @@
 package linda.shm;
 
-import java.util.concurrent.Semaphore;
 import linda.*;
 
 public class CallbackTemplate {
     private Callback callback;
-    private eventMode mode;
+    private Integer mode;
     private Tuple tuple;
 
-    public CallbackTemplate(Callaback c, eventMode mode, Tuple t) {
+    public CallbackTemplate(Callback c, Integer m, Tuple t) {
         this.callback = c;
         this.tuple = t;
-        this.mode = mode;
+        this.mode = m;
     }
 
-    public Semaphore getCallback() {
+    public Callback getCallback() {
         return this.callback;
     }
 
@@ -22,7 +21,7 @@ public class CallbackTemplate {
         return this.tuple;
     }
 
-    public eventMode getMode() {
+    public Integer getMode() {
         return this.mode;
     }
 }
