@@ -3,32 +3,21 @@ package linda.shm;
 import linda.Callback;
 import linda.Linda;
 import linda.Tuple;
+import java.util.*;
 
 /** Shared memory implementation of Linda. */
 public class CentralizedLinda implements Linda {
-<<<<<<< Updated upstream
+
+    private Map<Integer,List<Tuple>> tuplespace;
 	
-=======
-
-    private ListeTuples listeTuples;
-    private List<SemaphoreTemplate> listeSemaphores;
-	private List<CallbackTemplate> listeCallback;
-
->>>>>>> Stashed changes
     public CentralizedLinda() {
-        this.listeTuples = new ListeTuples();
-        this.listeSemaphores = new ArrayList<SemaphoreTemplate>();
-        this.listeCallback =  = new ArrayList<CallbackTemplate>();
+        this.tuplespace = new Hashmap<Integer,Tuple>();
     }
 
-<<<<<<< Updated upstream
-    // TO BE COMPLETED
-
-}
-=======
     @Override
     public void write(Tuple t) {
-        listeTuples.add(t);
+        Integer size = t.size();
+        if (this.tuplespace.containsKey)
 
         //Ce bloc va débloquer un thread en attente de read ou take en releasant la sémaphore
         //associée si elle vient d'être ajoutée
@@ -140,4 +129,3 @@ public class CentralizedLinda implements Linda {
         } //Sinon l'element est deja present
         return retourRecherche;
     }
->>>>>>> Stashed changes
