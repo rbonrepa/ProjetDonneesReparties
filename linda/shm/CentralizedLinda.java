@@ -256,7 +256,7 @@ public class CentralizedLinda implements Linda {
 
     @Override
     public void debug(String prefix) {
-        // TODO Auto-generated method stub
+        System.out.println(tuplespace);
         
     }
 
