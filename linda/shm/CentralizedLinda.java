@@ -57,7 +57,6 @@ public class CentralizedLinda implements Linda {
                     elmt.getCallback().call(t);
                     break;
                 }
-
                 else if (elmt.getMode() == 0) {
                     elmt.getCallback().call(t);
                 }
@@ -224,16 +223,15 @@ public class CentralizedLinda implements Linda {
     public void eventRegister(eventMode mode, eventTiming timing, Tuple template, Callback callback) {
         Integer m;
         if (mode == eventMode.READ) {
-            m = -1;
-        } else {
             m = 0;
+        } else {
+            m = -1;
         }
         CallbackTemplate ct = new CallbackTemplate(callback, m, template);
         this.callbackspace.add(ct);
         if (timing == eventTiming.IMMEDIATE) {
             this.callbackCheck(ct);
         }
-        
     }
 
     private void callbackCheck(CallbackTemplate ct) {
@@ -256,7 +254,15 @@ public class CentralizedLinda implements Linda {
 
     @Override
     public void debug(String prefix) {
-        System.out.println(tuplespace);
+        if (prefix.equals("callback")){
+            for(CallbackTemplate t: callbackspace)
+            {
+                System.out.println (t.getTuple());
+            }
+        }
+        else{
+            System.out.println(tuplespace);
+        }
         
     }
 

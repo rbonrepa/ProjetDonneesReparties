@@ -42,7 +42,8 @@ public class BasicTestCallback {
         System.out.println("(2) write: " + t3);
         linda.write(t3);
 
-        linda.debug("(2)");
+        linda.debug("callback");
+        linda.debug("");
 
     }
 

@@ -21,6 +21,9 @@ public class BasicTest2 {
                     Tuple res = linda.read(motif);
                     System.out.println("("+j+") Resultat:" + res);
                     linda.debug("("+j+")");
+                    Tuple t1 = new Tuple(4, 5);
+                    System.out.println("(0) writeessaiiii: " + t1);
+                    linda.write(t1);
                 }
             }.start();
         }
@@ -46,7 +49,7 @@ public class BasicTest2 {
                 Tuple t3 = new Tuple(4, "foo");
                 System.out.println("(0) write: " + t3);
                 linda.write(t3);
-                                
+
                 linda.debug("(0)");
 
             }
