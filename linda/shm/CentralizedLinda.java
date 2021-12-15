@@ -51,14 +51,17 @@ public class CentralizedLinda implements Linda {
         Iterator<CallbackTemplate> it2 = this.callbackspace.iterator();
         while (it2.hasNext()) {
             CallbackTemplate elmt = it2.next();
-            if (elmt.getTuple().matches(t)) {
+            if (t.matches(elmt.getTuple())) {
                 if (elmt.getMode() == -1 && !takeTriggered) {
                     this.tuplespace.get(t.size()).remove(t);
                     elmt.getCallback().call(t);
+                    it2.remove();
                     break;
                 }
                 else if (elmt.getMode() == 0) {
                     elmt.getCallback().call(t);
+                    it2.remove();
+                    break;
                 }
             }
                 
@@ -246,6 +249,7 @@ public class CentralizedLinda implements Linda {
                     }
                     ct.getCallback().call(elmt);
                     this.callbackspace.remove(ct);
+                    break;
                     
                 }
             }
