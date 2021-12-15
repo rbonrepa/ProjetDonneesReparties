@@ -1,13 +1,14 @@
 package linda.shm;
 
 import linda.*;
+import linda.Linda.eventMode;
 
 public class CallbackTemplate {
     private Callback callback;
-    private Integer mode;
+    private eventMode mode;
     private Tuple tuple;
 
-    public CallbackTemplate(Callback c, Integer m, Tuple t) {
+    public CallbackTemplate(Callback c, eventMode m, Tuple t) {
         this.callback = c;
         this.tuple = t;
         this.mode = m;
@@ -21,7 +22,7 @@ public class CallbackTemplate {
         return this.tuple;
     }
 
-    public Integer getMode() {
+    public eventMode getMode() {
         return this.mode;
     }
 }
