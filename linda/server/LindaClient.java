@@ -4,6 +4,7 @@ import linda.Callback;
 import linda.Linda;
 import linda.Tuple;
 
+import java.rmi.Naming;
 import java.util.Collection;
 
 /** Client part of a client/server implementation of Linda.
@@ -11,16 +12,18 @@ import java.util.Collection;
  * */
 public class LindaClient implements Linda {
 
+    private LindaServer server;
+
     /** Initializes the Linda implementation.
      *  @param serverURI the URI of the server, e.g. "rmi://localhost:4000/LindaServer" or "//localhost:4000/LindaServer".
      */
     public LindaClient(String serverURI) {
-        // TO BE COMPLETED
+        this.server = Naming.lookup(serverURI);
     }
 
     @Override
     public void write(Tuple t) {
-
+        this.server.write(t);
     }
 
     @Override
