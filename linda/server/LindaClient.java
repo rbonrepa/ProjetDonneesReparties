@@ -5,6 +5,7 @@ import linda.Linda;
 import linda.Tuple;
 
 import java.rmi.Naming;
+import java.util.ArrayList;
 import java.util.Collection;
 
 /** Client part of a client/server implementation of Linda.
@@ -18,42 +19,59 @@ public class LindaClient implements Linda {
      *  @param serverURI the URI of the server, e.g. "rmi://localhost:4000/LindaServer" or "//localhost:4000/LindaServer".
      */
     public LindaClient(String serverURI) {
-        this.server = Naming.lookup(serverURI);
+        try {
+            this.server = (LindaServer) Naming.lookup(serverURI);
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
     public void write(Tuple t) {
-        this.server.write(t);
+        try {
+            this.server.write(t);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        
     }
 
     @Override
     public Tuple take(Tuple template) {
-        return null;
+        try {
+            this.server.take(template);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return template;
     }
+
+    
 
     @Override
     public Tuple read(Tuple template) {
-        return null;
+        return template;
     }
 
     @Override
     public Tuple tryTake(Tuple template) {
-        return null;
+        return template;
     }
 
     @Override
     public Tuple tryRead(Tuple template) {
-        return null;
+        return template;
     }
 
     @Override
     public Collection<Tuple> takeAll(Tuple template) {
-        return null;
+        return new ArrayList<Tuple>();
     }
 
     @Override
     public Collection<Tuple> readAll(Tuple template) {
-        return null;
+        return new ArrayList<Tuple>();
     }
 
     @Override
@@ -63,9 +81,11 @@ public class LindaClient implements Linda {
 
     @Override
     public void debug(String prefix) {
-
     }
 
-    // TO BE COMPLETED
+    public static void main(String[] args) {
+        new LindaClient("//localhost:1099/LindaServer");
+        System.out.println("Client lancé");
+    }
 
 }
