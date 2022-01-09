@@ -172,6 +172,14 @@ public class LindaServer extends UnicastRemoteObject implements LindaServerInter
 
             Naming.rebind("//localhost:1099/LindaServer", server);
             System.out.println("Serveur Linda lancé");
+            /*
+            LindaClient client = new LindaClient("//localhost:1099/LindaServer");
+            System.out.println("Client lancé");
+            
+            Tuple t1 = new Tuple(1,2);
+            client.write(t1);
+            client.debug("");
+            */
         } catch (Exception e) {
             e.printStackTrace();
         }

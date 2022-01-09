@@ -13,14 +13,14 @@ import java.util.Collection;
  * */
 public class LindaClient implements Linda {
 
-    private LindaServer server;
+    private LindaServerInterface server;
 
     /** Initializes the Linda implementation.
      *  @param serverURI the URI of the server, e.g. "rmi://localhost:4000/LindaServer" or "//localhost:4000/LindaServer".
      */
     public LindaClient(String serverURI) {
         try {
-            this.server = (LindaServer) Naming.lookup(serverURI);
+            this.server = (LindaServerInterface) Naming.lookup(serverURI);
         }
         catch (Exception e) {
             e.printStackTrace();
@@ -40,11 +40,11 @@ public class LindaClient implements Linda {
     @Override
     public Tuple take(Tuple template) {
         try {
-            this.server.take(template);
+            return this.server.take(template);
         } catch (Exception e) {
             e.printStackTrace();
+            return new Tuple(0);
         }
-        return template;
     }
 
     
@@ -96,6 +96,10 @@ public class LindaClient implements Linda {
         Tuple t1 = new Tuple(1,2);
         client.write(t1);
         client.debug("");
+        Tuple t2 = client.take(new Tuple(Integer.class,Integer.class));
+        System.out.println(t2);
+       
+
     }
 
 }
