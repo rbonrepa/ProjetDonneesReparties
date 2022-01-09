@@ -152,7 +152,16 @@ public class LindaServer extends UnicastRemoteObject implements LindaServerInter
     }
 
     public void debug(String prefix) throws java.rmi.RemoteException {
-
+        if (prefix.equals("callback")){
+            for(CallbackTemplate t: callbackspace)
+            {
+                System.out.println(t.getTuple());
+            }
+        }
+        else{
+            System.out.println(tuplespace);
+        }
+        
     }
 
     public static void main(String[] args) {

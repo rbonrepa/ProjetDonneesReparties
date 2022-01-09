@@ -81,11 +81,21 @@ public class LindaClient implements Linda {
 
     @Override
     public void debug(String prefix) {
+        try {
+            server.debug(prefix);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        
     }
 
     public static void main(String[] args) {
-        new LindaClient("//localhost:1099/LindaServer");
+        LindaClient client = new LindaClient("//localhost:1099/LindaServer");
         System.out.println("Client lancé");
+        
+        Tuple t1 = new Tuple(1,2);
+        client.write(t1);
+        client.debug("");
     }
 
 }
