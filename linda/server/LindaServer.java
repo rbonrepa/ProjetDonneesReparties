@@ -33,6 +33,7 @@ public class LindaServer extends UnicastRemoteObject implements LindaServerInter
         //pouvant être effectuée dessus par un autre thread
 
         Integer size = t.size();
+        //Selon si la taille du tuple on créée une nouvelle clé dans le Hashmap ou non
         if (this.tuplespace.containsKey(size)) {
             this.tuplespace.get(size).add(t);
         }
@@ -161,7 +162,12 @@ public class LindaServer extends UnicastRemoteObject implements LindaServerInter
         else{
             System.out.println(tuplespace);
         }
-        
+    }
+
+    //Utilisé pour print le tuplespace dans la console du client
+    //Pourra-t-elle être utilisée finalement ? L'interface cache l'accèsà la fonction :/
+    public String debugClient() throws java.rmi.RemoteException {
+        return tuplespace.toString();
     }
 
     public static void main(String[] args) {
