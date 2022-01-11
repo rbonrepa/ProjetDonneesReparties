@@ -17,6 +17,9 @@ public class LindaServer extends UnicastRemoteObject implements LindaServerInter
     private List<CallbackTemplate> callbackspace;    //Liste des Callbacks en attente
     private Semaphore mutex;   //Utilisé pour que l'accès à la mémoire partagée se fasse par
     //un seul thread en même temps
+
+    //Utilisé pour afficher (ou non) ce que le serveur fait dans la console
+    public boolean debugActivated = false;
 	
     public LindaServer() throws RemoteException {
         this.tuplespace = new HashMap<>();
@@ -27,6 +30,7 @@ public class LindaServer extends UnicastRemoteObject implements LindaServerInter
 
     public void write(Tuple t) throws java.rmi.RemoteException {
          try {
+            if (debugActivated) {System.out.println("Ecriture de " + t.toString() + " en attente.");}
             mutex.acquire();
         } catch (InterruptedException e) {} 
         //On va accéder à la mémoire partagée donc on bloque toute autre intéraction
@@ -49,6 +53,7 @@ public class LindaServer extends UnicastRemoteObject implements LindaServerInter
         while (it.hasNext()) {
             SemaphoreTemplate st = it.next();
             if (st.getTuple().matches(t)) {
+                if (debugActivated) {System.out.println("La sémaphore associée au tuple " + st.getTuple().toString() + " est débloquée.");}
                 st.getSemaphore().release();
                 if (st.getMode() == eventMode.TAKE) {
                     takeTriggered = true;
@@ -63,6 +68,7 @@ public class LindaServer extends UnicastRemoteObject implements LindaServerInter
         while (it2.hasNext()) {
             CallbackTemplate elmt = it2.next();
             if (t.matches(elmt.getTuple())) {
+                if (debugActivated) {System.out.println("Le callback associé au tuple " + elmt.getTuple() + " est activé.");}
                 if (elmt.getMode() == eventMode.TAKE && !takeTriggered) {
                     this.tuplespace.get(t.size()).remove(t);
                     elmt.getCallback().call(t);
@@ -78,10 +84,16 @@ public class LindaServer extends UnicastRemoteObject implements LindaServerInter
                 
         }
         mutex.release(); //On laisse les autres thread intéragir avec la mémoire partagée
+
+        if (debugActivated) {System.out.println("Ecriture de " + t.toString() + " finie.");
+            System.out.print("Etat tuplespace : ");
+            debug("");
+        }
     }
 
     public Tuple take(Tuple template) throws java.rmi.RemoteException {
         try {
+            if (debugActivated) {System.out.println("Demande de take de " + template.toString() + " en attente.");}
             mutex.acquire();
         } catch (InterruptedException e1) {}
 
@@ -93,6 +105,7 @@ public class LindaServer extends UnicastRemoteObject implements LindaServerInter
                 if (elmt.matches(template)) {
                     it.remove();
                     mutex.release();
+                    if (debugActivated) {System.out.println("Le motif " + template.toString() + " est déjà présent dans la mémoire, take de l'élément : " + elmt.toString());}
                     return elmt;
                 }
             }
@@ -105,8 +118,9 @@ public class LindaServer extends UnicastRemoteObject implements LindaServerInter
         this.semaphorespace.add(new SemaphoreTemplate(s, template, eventMode.TAKE));
         
         //Attente bloquante qu'un élément au motif recherche apparaisse dans la mémoire
+        if (debugActivated) {System.out.println("Le motif n'est pas présent dans la mémoire --> take mis en attente.");}
         try {
-        s.acquire();
+            s.acquire();
         } 
         catch (InterruptedException e) {
             e.printStackTrace();
@@ -116,12 +130,15 @@ public class LindaServer extends UnicastRemoteObject implements LindaServerInter
             mutex.acquire();
         } catch (InterruptedException e) {}
 
+        {System.out.println("Le motif " + template.toString() + " est apparu dans la mémoire, un take va s'effectuer");}
+
         Iterator<Tuple> it = this.tuplespace.get(size).iterator();
         while (it.hasNext()) {
             Tuple elmt = it.next();
              if (elmt.matches(template)) {
                 it.remove();
                 mutex.release();
+                if (debugActivated) {System.out.println("Le motif " + template.toString() + " a take l'élément : " + elmt.toString());}
                 return elmt;
             }
         }
@@ -129,23 +146,152 @@ public class LindaServer extends UnicastRemoteObject implements LindaServerInter
     }
 
     public Tuple read(Tuple template) throws java.rmi.RemoteException {
-        return template;
+        try {
+            if (debugActivated) {System.out.println("Demande de read de " + template.toString() + " en attente.");}
+            mutex.acquire();
+        } catch (InterruptedException e1) {}
+        Integer size = template.size();
+        if (this.tuplespace.containsKey(size)) {
+            Iterator<Tuple> it = this.tuplespace.get(size).iterator();
+            while (it.hasNext()) {
+                Tuple elmt = it.next();
+                if (elmt.matches(template)) {
+                    mutex.release();
+                    if (debugActivated) {System.out.println("Le motif " + template.toString() + " est déjà présent dans la mémoire, read de l'élément : " + elmt.toString());}
+                    return elmt;
+                }
+            }
+        }
+       
+        mutex.release();
+
+        Semaphore s = new Semaphore(0);
+        this.semaphorespace.add(new SemaphoreTemplate(s, template, eventMode.READ));
+
+        //Attente bloquante
+        if (debugActivated) {System.out.println("Le motif n'est pas présent dans la mémoire --> read mis en attente.");}
+        try {
+            s.acquire();
+        } 
+        catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
+        //Attente bloquante qu'un élément au motif recherche apparaisse dans la mémoire
+        try {
+            mutex.acquire();
+        } catch (InterruptedException e) {}
+
+        {System.out.println("Le motif " + template.toString() + " est apparu dans la mémoire, un read va s'effectuer");}
+
+        Iterator<Tuple> it = this.tuplespace.get(size).iterator();
+        while (it.hasNext()) {
+            Tuple elmt = it.next();
+            if (elmt.matches(template)) {
+                mutex.release();
+                if (debugActivated) {System.out.println("Le motif " + template.toString() + " a été read et a renvoyé : " + elmt.toString());}
+                return elmt;
+            }
+        }
+        return null; //ERREUR SI ON ARRIVE ICI
     }
 
     public Tuple tryTake(Tuple template) throws java.rmi.RemoteException {
-        return template;
+        try {
+            mutex.acquire();
+        } catch (InterruptedException e) {}
+        Integer size = template.size();
+        Tuple res = null;
+        if (this.tuplespace.containsKey(size)) {
+            Iterator<Tuple> it = this.tuplespace.get(size).iterator();
+            while (it.hasNext()) {
+                Tuple elmt = it.next();
+                if (elmt.matches(template)) {
+                    it.remove();
+                    res = elmt;
+                    mutex.release();
+                    if (debugActivated) {System.out.println("Le tryTake du motif " + template.toString() + " a trouvé l'élément : " + res.toString());}
+                    return res;
+                }
+            }
+            if (debugActivated) {System.out.println("Le tryTake du motif " + template.toString() + " n'a pas trouvé d'élément correspondant.");}
+            //TODO faudrait tej ça
+            mutex.release();
+            return res;
+        }
+        if (debugActivated) {System.out.println("Le tryTake du motif " + template.toString() + " n'a pas trouvé d'élément correspondant.");}
+        mutex.release();
+        return res;
     }
 
     public Tuple tryRead(Tuple template) throws java.rmi.RemoteException {
-        return template;
+        try {
+            mutex.acquire();
+        } catch (InterruptedException e) {}
+
+        Integer size = template.size();
+        Tuple res = null;
+        if (this.tuplespace.containsKey(size)) {
+            Iterator<Tuple> it = this.tuplespace.get(size).iterator();
+            while (it.hasNext()) {
+                Tuple elmt = it.next();
+                if (elmt.matches(template)) {
+                    res = elmt;
+                    mutex.release();
+                    if (debugActivated) {System.out.println("Le tryRead du motif " + template.toString() + " a trouvé l'élément : " + res.toString());}
+                    return res;
+                }
+            }
+            if (debugActivated) {System.out.println("Le tryRead du motif " + template.toString() + " n'a pas trouvé d'élément correspondant.");}
+            mutex.release();
+            return res;
+        }
+        if (debugActivated) {System.out.println("Le tryRead du motif " + template.toString() + " n'a pas trouvé d'élément correspondant.");}
+        mutex.release();
+        return res;
     }
 
     public Collection<Tuple> takeAll(Tuple template) throws java.rmi.RemoteException {
-        return new ArrayList<>();
+        try {
+            mutex.acquire();
+        } catch (InterruptedException e) {}
+
+        Integer size = template.size();
+        ArrayList<Tuple> res = new ArrayList<>();
+        if (this.tuplespace.containsKey(size)) {
+            Iterator<Tuple> it = this.tuplespace.get(size).iterator();
+            while (it.hasNext()) {
+                Tuple elmt = it.next();
+                if (elmt.matches(template)) {
+                    res.add(elmt);
+                    it.remove();
+                }
+            }
+        }
+        mutex.release();
+        if (debugActivated) {System.out.println("Le takeAll du motif " + template.toString() + " a trouvé ces élements : " + res.toString());}
+        return res;
     }
 
     public Collection<Tuple> readAll(Tuple template) throws java.rmi.RemoteException {
-        return new ArrayList<>();
+        try {
+            mutex.acquire();
+        } catch (InterruptedException e) {}
+
+        Integer size = template.size();
+        ArrayList<Tuple> res = new ArrayList<>();
+        if (this.tuplespace.containsKey(size)) {
+            Iterator<Tuple> it = this.tuplespace.get(size).iterator();
+            while (it.hasNext()) {
+                Tuple elmt = it.next();
+                if (elmt.matches(template)) {
+                    res.add(elmt);
+                }
+            }
+        }
+        mutex.release();
+        if (debugActivated) {System.out.println("Le readAll du motif " + template.toString() + " a trouvé ces élements : " + res.toString());}
+        return res;
     }
 
     public void eventRegister(eventMode mode, eventTiming timing, Tuple template, Callback callback) throws java.rmi.RemoteException {
