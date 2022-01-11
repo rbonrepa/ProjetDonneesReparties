@@ -189,10 +189,10 @@ public class LindaClient implements Linda {
         System.out.println("Client lancé");
         client.debugActivated = true;
         
-        Tuple t1 = new Tuple(1);
+        Tuple t1 = new Tuple(1,1);
         client.write(t1);
         client.debug("");
-        Tuple t2 = client.read(new Tuple(Integer.class,Integer.class));
+        Tuple t2 = client.take(new Tuple(Integer.class,Integer.class));
         System.out.println(t2);
     }
 

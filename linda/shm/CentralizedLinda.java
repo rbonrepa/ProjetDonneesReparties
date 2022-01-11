@@ -46,7 +46,7 @@ public class CentralizedLinda implements Linda {
         boolean takeTriggered = false;
         while (it.hasNext()) {
             SemaphoreTemplate st = it.next();
-            if (st.getTuple().matches(t)) {
+            if (t.matches(st.getTuple())) {
                 st.getSemaphore().release();
                 if (st.getMode() == eventMode.TAKE) {
                     takeTriggered = true;

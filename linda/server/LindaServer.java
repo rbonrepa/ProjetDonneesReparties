@@ -52,7 +52,8 @@ public class LindaServer extends UnicastRemoteObject implements LindaServerInter
         boolean takeTriggered = false;
         while (it.hasNext()) {
             SemaphoreTemplate st = it.next();
-            if (st.getTuple().matches(t)) {
+            
+            if (t.matches(st.getTuple())) {
                 if (debugActivated) {System.out.println("La sémaphore associée au tuple " + st.getTuple().toString() + " est débloquée.");}
                 st.getSemaphore().release();
                 if (st.getMode() == eventMode.TAKE) {
@@ -318,7 +319,8 @@ public class LindaServer extends UnicastRemoteObject implements LindaServerInter
 
     public static void main(String[] args) {
         try {
-            LindaServer server = new LindaServer(); 
+            LindaServer server = new LindaServer();
+            server.debugActivated = true; 
 
             Registry registry = LocateRegistry.createRegistry(1099);
 
