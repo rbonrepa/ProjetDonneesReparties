@@ -1,6 +1,6 @@
 package linda.server;
 import java.util.Collection;
-import javax.security.auth.callback.Callback;
+import linda.Callback;
 import linda.Tuple;
 import linda.Linda.*;
 

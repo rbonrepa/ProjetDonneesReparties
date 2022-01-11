@@ -5,7 +5,8 @@ import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.*;
 import java.util.concurrent.Semaphore;
-import javax.security.auth.callback.Callback;
+
+import linda.Callback;
 import linda.Tuple;
 import linda.Linda.*;
 import linda.shm.*;
@@ -309,7 +310,7 @@ public class LindaServer extends UnicastRemoteObject implements LindaServerInter
     }
 
     @Override
-    public void eventRegister(eventMode mode, eventTiming timing, Tuple template, linda.Callback callback) throws java.rmi.RemoteException {        
+    public void eventRegister(eventMode mode, eventTiming timing, Tuple template, Callback callback) throws java.rmi.RemoteException {        
         CallbackTemplate ct = new CallbackTemplate(callback, mode, template);
         this.callbackspace.add(ct);
         if (timing == eventTiming.IMMEDIATE) {
