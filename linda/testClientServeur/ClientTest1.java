@@ -13,9 +13,9 @@ public class ClientTest1 {
         
         Tuple t1 = new Tuple(1);
         client.write(t1);
-        client.debug("");
-        Tuple t2 = client.take(new Tuple(Integer.class,Integer.class));
-        System.out.println(t2);
+        Tuple t2 = client.read(new Tuple(Integer.class,Integer.class));
+        Tuple t3 = client.take(new Tuple(Integer.class,Integer.class));
+        //System.out.println(t2);
                 
     }
 }

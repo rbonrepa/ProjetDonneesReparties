@@ -1,5 +1,7 @@
 package linda.testClientServeur;
 
+import java.util.Collection;
+
 import linda.*;
 import linda.server.LindaClient;
 
@@ -13,8 +15,7 @@ public class ClientTest2 {
         
         Tuple t1 = new Tuple(1);
         client.write(t1);
-        client.debug("");
-        Tuple t2 = client.take(new Tuple(Integer.class,Integer.class));
+        Collection<Tuple> t2 = client.takeAll(new Tuple(Integer.class,Integer.class));
         System.out.println(t2);
         
                 

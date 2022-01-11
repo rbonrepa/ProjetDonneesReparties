@@ -13,6 +13,10 @@ public class ClientTest3 {
         
         Tuple t1 = new Tuple(1,1);
         client.write(t1);
+        Tuple t2 = new Tuple(1-4,19);
+        client.write(t2);
+        Tuple t3 = new Tuple(2,1000000);
+        client.write(t3);
                 
     }
 }

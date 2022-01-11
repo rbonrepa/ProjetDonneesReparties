@@ -9,6 +9,7 @@ import javax.security.auth.callback.Callback;
 import linda.Tuple;
 import linda.Linda.*;
 import linda.shm.*;
+import linda.shm.CallbackTemplate;
 
 public class LindaServer extends UnicastRemoteObject implements LindaServerInterface{
 
@@ -139,7 +140,11 @@ public class LindaServer extends UnicastRemoteObject implements LindaServerInter
              if (elmt.matches(template)) {
                 it.remove();
                 mutex.release();
-                if (debugActivated) {System.out.println("Le motif " + template.toString() + " a take l'élément : " + elmt.toString());}
+                if (debugActivated) {
+                    System.out.println("Le motif " + template.toString() + " a take l'élément : " + elmt.toString());
+                    System.out.print("Etat tuplespace : ");
+                    debug("");
+                }
                 return elmt;
             }
         }
@@ -211,7 +216,11 @@ public class LindaServer extends UnicastRemoteObject implements LindaServerInter
                     it.remove();
                     res = elmt;
                     mutex.release();
-                    if (debugActivated) {System.out.println("Le tryTake du motif " + template.toString() + " a trouvé l'élément : " + res.toString());}
+                    if (debugActivated) {
+                        System.out.println("Le tryTake du motif " + template.toString() + " a trouvé l'élément : " + res.toString());
+                        System.out.print("Etat tuplespace : ");
+                        debug("");
+                    }
                     return res;
                 }
             }
@@ -270,7 +279,11 @@ public class LindaServer extends UnicastRemoteObject implements LindaServerInter
             }
         }
         mutex.release();
-        if (debugActivated) {System.out.println("Le takeAll du motif " + template.toString() + " a trouvé ces élements : " + res.toString());}
+        if (debugActivated) {
+            System.out.println("Le takeAll du motif " + template.toString() + " a trouvé ces élements : " + res.toString());
+            System.out.print("Etat tuplespace : ");
+            debug("");
+        }
         return res;
     }
 
@@ -295,8 +308,32 @@ public class LindaServer extends UnicastRemoteObject implements LindaServerInter
         return res;
     }
 
-    public void eventRegister(eventMode mode, eventTiming timing, Tuple template, Callback callback) throws java.rmi.RemoteException {
+    @Override
+    public void eventRegister(eventMode mode, eventTiming timing, Tuple template, linda.Callback callback) throws java.rmi.RemoteException {        
+        CallbackTemplate ct = new CallbackTemplate(callback, mode, template);
+        this.callbackspace.add(ct);
+        if (timing == eventTiming.IMMEDIATE) {
+            this.callbackCheck(ct);
+        }
+    }
 
+    private void callbackCheck(CallbackTemplate ct) {
+        Integer size = ct.getTuple().size();
+        if (this.tuplespace.containsKey(size)) {
+            Iterator<Tuple> it = this.tuplespace.get(size).iterator();
+            while (it.hasNext()) {
+                Tuple elmt = it.next();
+                if (elmt.matches(ct.getTuple())) {
+                    if (ct.getMode() == eventMode.TAKE){
+                        it.remove();
+                    }
+                    ct.getCallback().call(elmt);
+                    this.callbackspace.remove(ct);
+                    break;
+                    
+                }
+            }
+        }
     }
 
     public void debug(String prefix) throws java.rmi.RemoteException {

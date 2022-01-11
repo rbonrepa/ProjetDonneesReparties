@@ -8,8 +8,8 @@ public class CallbackTemplate {
     private eventMode mode;
     private Tuple tuple;
 
-    public CallbackTemplate(Callback c, eventMode m, Tuple t) {
-        this.callback = c;
+    public CallbackTemplate(Callback callback2, eventMode m, Tuple t) {
+        this.callback = callback2;
         this.tuple = t;
         this.mode = m;
     }
