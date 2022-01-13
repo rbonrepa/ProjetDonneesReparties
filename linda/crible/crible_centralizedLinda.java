@@ -2,6 +2,7 @@ package linda.crible;
 
 import linda.Linda;
 import linda.Tuple;
+import linda.server.LindaClient;
 
 import java.util.*;
 
@@ -16,6 +17,7 @@ public class crible_centralizedLinda {
         final int[] nb_element = {taille};
 
         // Initialisation de l'espace avec les entiers: inutile de lancer des threads pour une seule commande
+
         for (int indice = 0; indice <= taille; indice++) {
             linda.write(new Tuple(indice));
         }
@@ -54,7 +56,7 @@ public class crible_centralizedLinda {
 
                 }
 
-                }.start();
+            }.start();
         }
 
         // End chrono
