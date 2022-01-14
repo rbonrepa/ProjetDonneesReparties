@@ -22,9 +22,6 @@ public class ClientTest1 {
     }
 
     public static void main(String[] a) {
-        
-        
-
 
         LindaClient client = new LindaClient("//localhost:1099/LindaServer");
         System.out.println("Client n°1 lancé");
@@ -35,7 +32,5 @@ public class ClientTest1 {
         client.eventRegister(eventMode.READ, eventTiming.FUTURE, new Tuple(Integer.class), new MyCallback());
         //System.out.println(t2);
 
-        
-                
     }
 }

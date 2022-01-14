@@ -15,8 +15,8 @@ public class ClientTest2 {
         
         Tuple t1 = new Tuple(4);
         client.write(t1);
-        //Collection<Tuple> t2 = client.takeAll(new Tuple(Integer.class,Integer.class));
-        //System.out.println(t2);
+        Collection<Tuple> t2 = client.takeAll(new Tuple(Integer.class,Integer.class));
+        System.out.println(t2);
         
                 
     }

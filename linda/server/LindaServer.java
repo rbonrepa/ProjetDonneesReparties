@@ -74,6 +74,7 @@ public class LindaServer extends UnicastRemoteObject implements LindaServerInter
                 if (debugActivated) {System.out.println("Le callback associé au tuple " + elmt.getTuple() + " est activé.");}
                 if (elmt.getMode() == eventMode.TAKE && !takeTriggered) {
                     this.tuplespace.get(t.size()).remove(t);
+                    removeIfKeyEmpty(t.size());
                     elmt.getCallback().call(t);
                     it2.remove();
                     break;
@@ -107,6 +108,7 @@ public class LindaServer extends UnicastRemoteObject implements LindaServerInter
                 Tuple elmt = it.next();
                 if (elmt.matches(template)) {
                     it.remove();
+                    removeIfKeyEmpty(size);
                     mutex.release();
                     if (debugActivated) {System.out.println("Le motif " + template.toString() + " est déjà présent dans la mémoire, take de l'élément : " + elmt.toString());}
                     return elmt;
@@ -140,6 +142,7 @@ public class LindaServer extends UnicastRemoteObject implements LindaServerInter
             Tuple elmt = it.next();
              if (elmt.matches(template)) {
                 it.remove();
+                removeIfKeyEmpty(size);
                 mutex.release();
                 if (debugActivated) {
                     System.out.println("Le motif " + template.toString() + " a take l'élément : " + elmt.toString());
@@ -215,6 +218,7 @@ public class LindaServer extends UnicastRemoteObject implements LindaServerInter
                 Tuple elmt = it.next();
                 if (elmt.matches(template)) {
                     it.remove();
+                    removeIfKeyEmpty(size);
                     res = elmt;
                     mutex.release();
                     if (debugActivated) {
@@ -276,6 +280,7 @@ public class LindaServer extends UnicastRemoteObject implements LindaServerInter
                 if (elmt.matches(template)) {
                     res.add(elmt);
                     it.remove();
+                    removeIfKeyEmpty(size);
                 }
             }
         }
@@ -327,6 +332,7 @@ public class LindaServer extends UnicastRemoteObject implements LindaServerInter
                 if (elmt.matches(ct.getTuple())) {
                     if (ct.getMode() == eventMode.TAKE){
                         it.remove();
+                        removeIfKeyEmpty(size);
                     }
                     ct.getCallback().call(elmt);
                     this.callbackspace.remove(ct);
@@ -349,10 +355,24 @@ public class LindaServer extends UnicastRemoteObject implements LindaServerInter
         }
     }
 
-    //Utilisé pour print le tuplespace dans la console du client
-    //Pourra-t-elle être utilisée finalement ? L'interface cache l'accèsà la fonction :/
+    //Pour print le tuplespace dans la console du client
+    //Pourra-t-elle être utilisée finalement ? L'interface cache l'accès à la fonction :/
     public String debugClient() throws java.rmi.RemoteException {
         return tuplespace.toString();
+    }
+
+    /**
+     * Enlève la clé de taille cle si elle est vide (ne contient plus de tuple) dans tuplespace
+     * entier : cle est la taille du tuple, et aussi sa clé pour le retrouver dans le hashmap
+     */
+    public void removeIfKeyEmpty(int cle) {
+        if (tuplespace.containsKey(cle)) {
+            if (tuplespace.get(cle).isEmpty()) {
+                tuplespace.remove(cle);
+            } 
+        } else {
+            System.out.println("Erreur dans removeIfKeyEmpty la clé est introuvable");
+        }
     }
 
     public static void main(String[] args) {
