@@ -1,9 +1,9 @@
 package linda.crible;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 
 
 public class crible_sequentiel {
+
     // Initialiser une liste avec tous les entiers
     private static List<Integer> initialisation(Integer taille){
         List<Integer> liste;
@@ -25,9 +25,11 @@ public class crible_sequentiel {
     }
 
     public static void main(String[] args) {
+        long départ, fin;
         // Start chrono
-        long lStartTime = System.currentTimeMillis();
+        départ = System.nanoTime();
 
+        // Initialisation de la liste
         int taille = Integer.parseInt(args[0]);
         List<Integer> liste = initialisation(taille);
 
@@ -37,11 +39,12 @@ public class crible_sequentiel {
         }
 
         // End chrono
-        long lEndTime = System.currentTimeMillis();
-        long output = lEndTime - lStartTime;
+        fin = System.nanoTime();
+        long output = (fin - départ);
 
-        System.out.println("Temps  d'éxecution: " + output / 1000.0 + " secondes. ");
-        // System.out.println("Liste des nombres premiers:"+liste);
-        // Pour 1000000, tps d'execution = 59 secondes
+        System.out.println("Temps d'execution: "+ output /1_000000 + "s");
+        System.out.println("Résultat des nombres premiers inférieurs à " + taille +" : " );
+        System.out.println(liste);
+        //System.out.println(liste.size());
     }
 }
