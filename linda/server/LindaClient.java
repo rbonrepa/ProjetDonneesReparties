@@ -5,17 +5,19 @@ import linda.Linda;
 import linda.Tuple;
 
 import java.rmi.Naming;
+import java.rmi.Remote;
 import java.util.ArrayList;
 import java.util.Collection;
 
 /** Client part of a client/server implementation of Linda.
  * It implements the Linda interface and propagates everything to the server it is connected to.
  * */
-public class LindaClient implements Linda {
+public class LindaClient implements Linda  {
 
     private LindaServerInterface server;
-
+    private LindaClientCallback callbackRemote; // "Serveur" des callbacks permettant au serveur de communiquer avec le Client
     public boolean debugActivated = false;
+    private int callbackID = 0; // Permet de différencier les différents Callbacks
 
     /** Initializes the Linda implementation.
      *  @param serverURI the URI of the server, e.g. "rmi://localhost:4000/LindaServer" or "//localhost:4000/LindaServer".
@@ -24,6 +26,7 @@ public class LindaClient implements Linda {
         try {
             if (debugActivated) {System.out.println("Tentative de connexion au serveur ...");}
             
+            this.callbackRemote = new LindaClientCallback();
             this.server = (LindaServerInterface) Naming.lookup(serverURI);
             
             if (debugActivated) {
@@ -172,7 +175,11 @@ public class LindaClient implements Linda {
     @Override
     public void eventRegister(eventMode mode, eventTiming timing, Tuple template, Callback callback) {
         try {
-        this.server.eventRegister(mode, timing, template, callback);
+        CallbackTemplateServer ct = new CallbackTemplateServer(callback, mode, template, this.callbackRemote, callbackID);
+        this.callbackRemote.add(ct);
+        this.callbackID ++;
+        this.server.eventRegister(mode, timing, template, callback, ct);
+        
         } catch (Exception e) {
             e.printStackTrace();
         }

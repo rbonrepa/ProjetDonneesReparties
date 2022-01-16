@@ -20,9 +20,7 @@ public interface LindaServerInterface extends java.rmi.Remote {
 
     public Collection<Tuple> readAll(Tuple template) throws java.rmi.RemoteException;
 
-    public void eventRegister(eventMode mode, eventTiming timing, Tuple template, Callback callback) throws java.rmi.RemoteException;
+    public void eventRegister(eventMode mode, eventTiming timing, Tuple template, Callback callback, CallbackTemplateServer ct) throws java.rmi.RemoteException;
 
     public void debug(String prefix) throws java.rmi.RemoteException;
-
-
 }

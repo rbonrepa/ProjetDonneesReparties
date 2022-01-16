@@ -16,7 +16,7 @@ public class LindaServer extends UnicastRemoteObject implements LindaServerInter
 
     private Map<Integer,List<Tuple>> tuplespace;  //liste des tuples en mémoire partagée
     private List<SemaphoreTemplate> semaphorespace;  //Liste des semaphores pour les read/take en attente
-    private List<CallbackTemplate> callbackspace;    //Liste des Callbacks en attente
+    private List<CallbackTemplateServer> callbackspace;    //Liste des Callbacks en attente
     private Semaphore mutex;   //Utilisé pour que l'accès à la mémoire partagée se fasse par
     //un seul thread en même temps
 
@@ -67,20 +67,20 @@ public class LindaServer extends UnicastRemoteObject implements LindaServerInter
         }
 
         //Débloquage potentiel des callbacks
-        Iterator<CallbackTemplate> it2 = this.callbackspace.iterator();
+        Iterator<CallbackTemplateServer> it2 = this.callbackspace.iterator();
         while (it2.hasNext()) {
-            CallbackTemplate elmt = it2.next();
+            CallbackTemplateServer elmt = it2.next();
             if (t.matches(elmt.getTuple())) {
                 if (debugActivated) {System.out.println("Le callback associé au tuple " + elmt.getTuple() + " est activé.");}
                 if (elmt.getMode() == eventMode.TAKE && !takeTriggered) {
                     this.tuplespace.get(t.size()).remove(t);
                     removeIfKeyEmpty(t.size());
-                    elmt.getCallback().call(t);
+                    elmt.getClient().callbackCheck(elmt, t); // Il y a un match, on déclenche le callbackCheck côté client
                     it2.remove();
                     break;
                 }
                 else if (elmt.getMode() == eventMode.READ) {
-                    elmt.getCallback().call(t);
+                    elmt.getClient().callbackCheck(elmt, t); // Il y a un match, on déclenche le callbackCheck côté client
                     it2.remove();
                     break;
                 }
@@ -315,15 +315,14 @@ public class LindaServer extends UnicastRemoteObject implements LindaServerInter
     }
 
     @Override
-    public void eventRegister(eventMode mode, eventTiming timing, Tuple template, Callback callback) throws java.rmi.RemoteException {        
-        CallbackTemplate ct = new CallbackTemplate(callback, mode, template);
-        this.callbackspace.add(ct);
-        if (timing == eventTiming.IMMEDIATE) {
+    public void eventRegister(eventMode mode, eventTiming timing, Tuple template, Callback callback, CallbackTemplateServer ct) throws java.rmi.RemoteException {        
+        this.callbackspace.add(ct); // Enregistrement du CallbackTemplateServer dans le callbackspace
+        if (timing == eventTiming.IMMEDIATE) { // Timing = IMMEDIATE, on déclenche callbackCheck
             this.callbackCheck(ct);
         }
     }
 
-    private void callbackCheck(CallbackTemplate ct) {
+    private void callbackCheck(CallbackTemplateServer ct) {
         Integer size = ct.getTuple().size();
         if (this.tuplespace.containsKey(size)) {
             Iterator<Tuple> it = this.tuplespace.get(size).iterator();
@@ -334,7 +333,12 @@ public class LindaServer extends UnicastRemoteObject implements LindaServerInter
                         it.remove();
                         removeIfKeyEmpty(size);
                     }
-                    ct.getCallback().call(elmt);
+                    try {
+                        ct.getClient().callbackCheck(ct, elmt); // Il y a un match, on déclenche le callbackCheck côté client
+                        System.out.println(tuplespace);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
                     this.callbackspace.remove(ct);
                     break;
                     
@@ -345,7 +349,7 @@ public class LindaServer extends UnicastRemoteObject implements LindaServerInter
 
     public void debug(String prefix) throws java.rmi.RemoteException {
         if (prefix.equals("callback")){
-            for(CallbackTemplate t: callbackspace)
+            for(CallbackTemplateServer t: callbackspace)
             {
                 System.out.println(t.getTuple());
             }
@@ -374,7 +378,7 @@ public class LindaServer extends UnicastRemoteObject implements LindaServerInter
             System.out.println("Erreur dans removeIfKeyEmpty la clé est introuvable");
         }
     }
-
+    
     public static void main(String[] args) {
         try {
             LindaServer server = new LindaServer();
