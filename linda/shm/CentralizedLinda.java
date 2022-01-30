@@ -10,18 +10,27 @@ import java.util.concurrent.Semaphore;
 /** Shared memory implementation of Linda. */
 public class CentralizedLinda implements Linda {
 
-    private Map<Integer,List<Tuple>> tuplespace;
-    private List<SemaphoreTemplate> semaphorespace;
-    private List<CallbackTemplate> callbackspace;
+    private Map<Integer,List<Tuple>> tuplespace;  //liste des tuples en mémoire partagée
+    private List<SemaphoreTemplate> semaphorespace;  //Liste des semaphores pour les read/take en attente
+    private List<CallbackTemplate> callbackspace;    //Liste des Callbacks en attente
+    private Semaphore mutex;   //Utilisé pour que l'accès à la mémoire partagée se fasse par
+    //un seul thread en même temps
 	
     public CentralizedLinda() {
         this.tuplespace = new HashMap<>();
         this.semaphorespace = new ArrayList<>();
         this.callbackspace = new ArrayList<>();
+        this.mutex = new Semaphore(1);
     }
 
     @Override
     public void write(Tuple t) {
+        try {
+            mutex.acquire();
+        } catch (InterruptedException e) {} 
+        //On va accéder à la mémoire partagée donc on bloque toute autre intéraction
+        //pouvant être effectuée dessus par un autre thread
+
         Integer size = t.size();
         if (this.tuplespace.containsKey(size)) {
             this.tuplespace.get(size).add(t);
@@ -37,9 +46,9 @@ public class CentralizedLinda implements Linda {
         boolean takeTriggered = false;
         while (it.hasNext()) {
             SemaphoreTemplate st = it.next();
-            if (st.getTuple().matches(t)) {
+            if (t.matches(st.getTuple())) {
                 st.getSemaphore().release();
-                if (st.getMode() == -1) {
+                if (st.getMode() == eventMode.TAKE) {
                     takeTriggered = true;
                 }
                 it.remove();
@@ -51,87 +60,100 @@ public class CentralizedLinda implements Linda {
         Iterator<CallbackTemplate> it2 = this.callbackspace.iterator();
         while (it2.hasNext()) {
             CallbackTemplate elmt = it2.next();
-            if (elmt.getTuple().matches(t)) {
-                if (elmt.getMode() == -1 && !takeTriggered) {
+            if (t.matches(elmt.getTuple())) {
+                if (elmt.getMode() == eventMode.TAKE && !takeTriggered) {
                     this.tuplespace.get(t.size()).remove(t);
                     elmt.getCallback().call(t);
+                    it2.remove();
                     break;
                 }
-                else if (elmt.getMode() == 0) {
+                else if (elmt.getMode() == eventMode.READ) {
                     elmt.getCallback().call(t);
+                    it2.remove();
+                    break;
                 }
             }
                 
         }
+
+        mutex.release(); //On laisse les autres thread intéragir avec la mémoire partagée
                
     }
 
 
     @Override
     public Tuple take(Tuple template) {
-       Integer size = template.size();
-       boolean matches = false;
-       if (this.tuplespace.containsKey(size)) {
+        try {
+            mutex.acquire();
+        } catch (InterruptedException e1) {}
+
+        Integer size = template.size();
+        if (this.tuplespace.containsKey(size)) {
             Iterator<Tuple> it = this.tuplespace.get(size).iterator();
             while (it.hasNext()) {
                 Tuple elmt = it.next();
                 if (elmt.matches(template)) {
-                    matches = true;
+                    it.remove();
+                    mutex.release();
+                    return elmt;
                 }
             }
-       }
-
-       Semaphore s;
-       if (!matches) {
-           s = new Semaphore(0);
-           this.semaphorespace.add(new SemaphoreTemplate(s, template, -1));
         }
-        else {
-            s = new Semaphore(1);
-        }
+        //Si on arrive ici, alors le motif n'est pas encore présent dans la mémoire
+        mutex.release();
 
+        //On fait une attente bloquante
+        Semaphore s = new Semaphore(0);
+        this.semaphorespace.add(new SemaphoreTemplate(s, template, eventMode.TAKE));
+        
+
+        //Attente bloquante qu'un élément au motif recherche apparaisse dans la mémoire
         try {
         s.acquire();
         } 
         catch (InterruptedException e) {
             e.printStackTrace();
         }
+
+        try {
+            mutex.acquire();
+        } catch (InterruptedException e) {}
 
         Iterator<Tuple> it = this.tuplespace.get(size).iterator();
         while (it.hasNext()) {
             Tuple elmt = it.next();
              if (elmt.matches(template)) {
                 it.remove();
+                mutex.release();
                 return elmt;
             }
         }
-        return null;
-        
+
+        return null; //ERREUR SI ON ARRIVE ICI
     }
 
     @Override
     public Tuple read(Tuple template) {
+        try {
+            mutex.acquire();
+        } catch (InterruptedException e1) {}
         Integer size = template.size();
-        boolean matches = false;
         if (this.tuplespace.containsKey(size)) {
             Iterator<Tuple> it = this.tuplespace.get(size).iterator();
             while (it.hasNext()) {
                 Tuple elmt = it.next();
                 if (elmt.matches(template)) {
-                    matches = true;
+                    mutex.release();
+                    return elmt;
                 }
             }
        }
+       mutex.release();
 
-       Semaphore s;
-       if (!matches) {
-           s = new Semaphore(0);
-           this.semaphorespace.add(new SemaphoreTemplate(s, template, 0));
-        }
-        else {
-            s = new Semaphore(1);
-        }
+        Semaphore s = new Semaphore(0);
+        this.semaphorespace.add(new SemaphoreTemplate(s, template, eventMode.READ));
 
+        //Attente bloquante
         try {
         s.acquire();
         } 
@@ -139,18 +161,27 @@ public class CentralizedLinda implements Linda {
             e.printStackTrace();
         }
 
+        //Attente bloquante qu'un élément au motif recherche apparaisse dans la mémoire
+        try {
+            mutex.acquire();
+        } catch (InterruptedException e) {}
+
         Iterator<Tuple> it = this.tuplespace.get(size).iterator();
         while (it.hasNext()) {
             Tuple elmt = it.next();
              if (elmt.matches(template)) {
-                return elmt;
+                 mutex.release();
+                 return elmt;
             }
         }
-        return null;    
+        return null; //ERREUR SI ON ARRIVE ICI    
     }
 
     @Override
     public Tuple tryTake(Tuple template) {
+        try {
+            mutex.acquire();
+        } catch (InterruptedException e) {}
         Integer size = template.size();
         Tuple res = null;
         if (this.tuplespace.containsKey(size)) {
@@ -160,16 +191,23 @@ public class CentralizedLinda implements Linda {
                  if (elmt.matches(template)) {
                      it.remove();
                      res = elmt;
+                     mutex.release();
                      return res;
                  }
              }
+             mutex.release();
              return res;
         }
+        mutex.release();
         return res;
     }
 
     @Override
     public Tuple tryRead(Tuple template) {
+        try {
+            mutex.acquire();
+        } catch (InterruptedException e) {}
+
         Integer size = template.size();
         Tuple res = null;
         if (this.tuplespace.containsKey(size)) {
@@ -178,16 +216,23 @@ public class CentralizedLinda implements Linda {
                  Tuple elmt = it.next();
                  if (elmt.matches(template)) {
                      res = elmt;
+                     mutex.release();
                      return res;
                  }
              }
+             mutex.release();
              return res;
         }
+        mutex.release();
         return res;
     }
 
     @Override
     public Collection<Tuple> takeAll(Tuple template) {
+        try {
+            mutex.acquire();
+        } catch (InterruptedException e) {}
+
         Integer size = template.size();
         ArrayList<Tuple> res = new ArrayList<>();
         if (this.tuplespace.containsKey(size)) {
@@ -200,11 +245,16 @@ public class CentralizedLinda implements Linda {
                 }
             }
         }
+        mutex.release();
         return res;
     }
 
     @Override
     public Collection<Tuple> readAll(Tuple template) {
+        try {
+            mutex.acquire();
+        } catch (InterruptedException e) {}
+
         Integer size = template.size();
         ArrayList<Tuple> res = new ArrayList<>();
         if (this.tuplespace.containsKey(size)) {
@@ -216,18 +266,13 @@ public class CentralizedLinda implements Linda {
                 }
             }
         }
+        mutex.release();
         return res;
     }
 
     @Override
-    public void eventRegister(eventMode mode, eventTiming timing, Tuple template, Callback callback) {
-        Integer m;
-        if (mode == eventMode.READ) {
-            m = 0;
-        } else {
-            m = -1;
-        }
-        CallbackTemplate ct = new CallbackTemplate(callback, m, template);
+    public void eventRegister(eventMode mode, eventTiming timing, Tuple template, Callback callback) {        
+        CallbackTemplate ct = new CallbackTemplate(callback, mode, template);
         this.callbackspace.add(ct);
         if (timing == eventTiming.IMMEDIATE) {
             this.callbackCheck(ct);
@@ -241,11 +286,12 @@ public class CentralizedLinda implements Linda {
             while (it.hasNext()) {
                 Tuple elmt = it.next();
                 if (elmt.matches(ct.getTuple())) {
-                    if (ct.getMode() == -1) {
+                    if (ct.getMode() == eventMode.TAKE){
                         it.remove();
                     }
                     ct.getCallback().call(elmt);
                     this.callbackspace.remove(ct);
+                    break;
                     
                 }
             }

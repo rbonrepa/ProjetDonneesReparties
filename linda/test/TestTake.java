@@ -2,6 +2,7 @@ package linda.test;
 
 import linda.Linda;
 import linda.Tuple;
+import linda.server.LindaClient;
 
 import java.util.Collection;
 
@@ -9,8 +10,9 @@ public class TestTake {
 
     public static void main(String[] a) {
                 
-        final Linda linda = new linda.shm.CentralizedLinda();
-        // final Linda linda = new linda.server.LindaClient("//localhost:4000/aaa");
+        //final Linda linda = new linda.shm.CentralizedLinda();
+        final LindaClient linda  = new LindaClient("//localhost:1099/LindaServer");
+        linda.debugActivated = true;
                 
         new Thread() {
             public void run() {

@@ -1,8 +1,6 @@
 package linda.search.basic;
 
 import java.util.UUID;
-import java.util.Timer;
-import java.util.TimerTask;
 import java.util.stream.Stream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -33,8 +31,8 @@ public class Manager implements Runnable {
     }
 
     private void loadData(String pathname) {
-        try (Stream<String> stream = Files.lines(Paths.get(pathname))) {
-            stream.limit(10000).forEach(s -> linda.write(new Tuple(Code.Value, s.trim())));
+        try (Stream<String> stream = Files.lines(Paths.get("src/french"))) {
+            stream.limit(100).forEach(s -> linda.write(new Tuple(Code.Value, s.trim())));
         } catch (java.io.IOException e) {
             e.printStackTrace();
         }
