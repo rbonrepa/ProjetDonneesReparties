@@ -9,6 +9,7 @@ public class AsynchronousCallback implements Callback {
         
     private Callback cb;
 
+    // test Enguerran
     public AsynchronousCallback (Callback cb) { this.cb = cb; }
         
     /** Asynchronous call: the associated callback is concurrently run and this one immediately returns.
