@@ -44,16 +44,25 @@ public class CentralizedLinda implements Linda {
         //associée si elle vient d'être ajoutée 
         Iterator<SemaphoreTemplate> it = this.semaphorespace.iterator();
         boolean takeTriggered = false;
+        SemaphoreTemplate takeThread = null;
         while (it.hasNext()) {
             SemaphoreTemplate st = it.next();
             if (t.matches(st.getTuple())) {
-                st.getSemaphore().release();
-                if (st.getMode() == eventMode.TAKE) {
+                if (st.getMode() == eventMode.TAKE && !takeTriggered) {
                     takeTriggered = true;
+                    takeThread = st;
+                    it.remove();
+                    
                 }
-                it.remove();
-                break;
+                else if (st.getMode() == eventMode.READ) {
+                    st.getSemaphore().release();
+                    it.remove();
+                }
+                
             }
+        }
+        if (takeTriggered) {
+            takeThread.getSemaphore().release();
         }
 
         //Débloquage potentiel des callbacks
@@ -65,12 +74,11 @@ public class CentralizedLinda implements Linda {
                     this.tuplespace.get(t.size()).remove(t);
                     elmt.getCallback().call(t);
                     it2.remove();
-                    break;
+                    takeTriggered = true;
                 }
                 else if (elmt.getMode() == eventMode.READ) {
                     elmt.getCallback().call(t);
                     it2.remove();
-                    break;
                 }
             }
                 
@@ -100,11 +108,13 @@ public class CentralizedLinda implements Linda {
             }
         }
         //Si on arrive ici, alors le motif n'est pas encore présent dans la mémoire
-        mutex.release();
 
         //On fait une attente bloquante
         Semaphore s = new Semaphore(0);
         this.semaphorespace.add(new SemaphoreTemplate(s, template, eventMode.TAKE));
+        mutex.release();
+
+        
         
 
         //Attente bloquante qu'un élément au motif recherche apparaisse dans la mémoire
@@ -148,10 +158,13 @@ public class CentralizedLinda implements Linda {
                 }
             }
        }
+
+       Semaphore s = new Semaphore(0);
+       this.semaphorespace.add(new SemaphoreTemplate(s, template, eventMode.READ));
+
        mutex.release();
 
-        Semaphore s = new Semaphore(0);
-        this.semaphorespace.add(new SemaphoreTemplate(s, template, eventMode.READ));
+        
 
         //Attente bloquante
         try {
