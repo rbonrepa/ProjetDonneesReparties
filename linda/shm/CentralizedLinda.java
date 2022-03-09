@@ -4,6 +4,9 @@ import linda.Callback;
 import linda.Linda;
 import linda.Tuple;
 import java.util.*;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
 
 
@@ -15,12 +18,15 @@ public class CentralizedLinda implements Linda {
     private List<CallbackTemplate> callbackspace;    //Liste des Callbacks en attente
     private Semaphore mutex;   //Utilisé pour que l'accès à la mémoire partagée se fasse par
     //un seul thread en même temps
+    private ExecutorService poule;
+
 	
     public CentralizedLinda() {
         this.tuplespace = new HashMap<>();
         this.semaphorespace = new ArrayList<>();
         this.callbackspace = new ArrayList<>();
         this.mutex = new Semaphore(1);
+        this.poule = Executors.newFixedThreadPool(4);
     }
 
     @Override
@@ -55,6 +61,7 @@ public class CentralizedLinda implements Linda {
                     
                 }
                 else if (st.getMode() == eventMode.READ) {
+                    
                     st.getSemaphore().release();
                     it.remove();
                 }
@@ -325,4 +332,26 @@ public class CentralizedLinda implements Linda {
         
     }
 
+}
+
+class RechercheTuple implements Callable<Tuple> {
+    // pool fixe
+    private List<Tuple> tuplespace;
+    private Tuple template;
+
+    public RechercheTuple(Tuple template, List<Tuple> t) {
+       this.tuplespace = t;
+       this.template = template;
+    }
+
+    public Tuple call() {
+        Iterator<Tuple> it = this.tuplespace.iterator();
+        while (it.hasNext()) {
+            Tuple elmt = it.next();
+            if (elmt.matches(template)) {
+                return elmt;
+            }
+        }
+    return null;
+    }
 }
