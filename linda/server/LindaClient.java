@@ -8,6 +8,11 @@ import java.rmi.Naming;
 import java.rmi.Remote;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Semaphore;
 
 /** Client part of a client/server implementation of Linda.
  * It implements the Linda interface and propagates everything to the server it is connected to.
@@ -16,8 +21,11 @@ public class LindaClient implements Linda  {
 
     private LindaServerInterface server;
     private LindaClientCallback callbackRemote; // "Serveur" des callbacks permettant au serveur de communiquer avec le Client
-    public boolean debugActivated = false;
+    public boolean debugActivated = false;   //Si mis à true, va print tout ce qui se passe dans la console
     private int callbackID = 0; // Permet de différencier les différents Callbacks
+
+    private Map<Integer,List<Tuple>> cache;  //liste des tuples du cache client
+    private Semaphore mutex;  //On rajoute une sémaphore car la mémoire du client est partagée maintenant
 
     /** Initializes the Linda implementation.
      *  @param serverURI the URI of the server, e.g. "rmi://localhost:4000/LindaServer" or "//localhost:4000/LindaServer".
@@ -26,6 +34,9 @@ public class LindaClient implements Linda  {
         try {
             if (debugActivated) {System.out.println("Tentative de connexion au serveur ...");}
             
+            this.cache = new HashMap<>();
+            this.mutex = new Semaphore(1);
+
             this.callbackRemote = new LindaClientCallback();
             this.server = (LindaServerInterface) Naming.lookup(serverURI);
             
@@ -42,8 +53,25 @@ public class LindaClient implements Linda  {
     @Override
     public void write(Tuple t) {
         try {
-            if (debugActivated) {System.out.println("Demande d'écriture du Tuple : " + t.toString());}
+            if (debugActivated) {System.out.println("Ecriture de " + t.toString() + "sur le cache en attente.");}
+            mutex.acquire();
+            //On va accéder à la mémoire du cache (qui est partagée) donc on bloque toute autre intéraction
+            //pouvant être effectuée dessus par le serveur
             
+            Integer size = t.size();
+            //Selon si la taille du tuple on créée une nouvelle clé dans le Hashmap ou non
+            if (this.cache.containsKey(size)) {
+                this.cache.get(size).add(t);
+            }
+            else {
+                this.cache.put(size,new ArrayList<Tuple>());
+                this.cache.get(size).add(t);
+            }
+            mutex.release();
+            if (debugActivated) {System.out.println("Ecriture de " + t.toString() + "sur le cache faite !");}
+    
+            if (debugActivated) {System.out.println("Demande d'écriture du Tuple : " + t.toString() + " sur le serveur");}
+
             this.server.write(t);
 
             if (debugActivated) {
@@ -57,7 +85,7 @@ public class LindaClient implements Linda  {
     }
 
     @Override
-    public Tuple take(Tuple template) {
+    public Tuple take(Tuple template) { //TODO
         try {
             if (debugActivated) {System.out.println("Demande de take du template : " + template.toString());}
             
@@ -81,6 +109,25 @@ public class LindaClient implements Linda  {
     public Tuple read(Tuple template) {
         try {
             if (debugActivated) {System.out.println("Demande de read du template : " + template.toString());}
+
+            if (debugActivated) {System.out.println("On regarde si le tuple est dans le cache.");}
+            mutex.acquire();
+            Integer size = template.size();
+            if (this.cache.containsKey(size)) {
+                Iterator<Tuple> it = this.cache.get(size).iterator();
+                while (it.hasNext()) {
+                    Tuple elmt = it.next();
+                    if (elmt.matches(template)) {
+                        mutex.release();
+                        if (debugActivated) {System.out.println("Le motif " + template.toString() + " est déjà présent dans le cache client, read de l'élément : " + elmt.toString());}
+                        return elmt;
+                    }
+                }
+            }
+            
+            if (debugActivated) {System.out.println("Le motif " + template.toString() + " n'est pas present dans le cache, on va chercher sur le serveur");}
+
+            mutex.release();
 
             Tuple retour = this.server.read(template);
 
