@@ -255,14 +255,43 @@ public class LindaClient implements Linda  {
 
     @Override
     public void eventRegister(eventMode mode, eventTiming timing, Tuple template, Callback callback) {
-        try {
-        CallbackTemplateServer ct = new CallbackTemplateServer(callback, mode, template, this.callbackRemote, callbackID);
-        this.callbackRemote.add(ct);
-        this.callbackID ++;
-        this.server.eventRegister(mode, timing, template, callback, ct);
         
-        } catch (Exception e) {
-            e.printStackTrace();
+        boolean court_circuit = false;
+        if (timing == eventTiming.IMMEDIATE && mode == eventMode.READ) {
+            //C'est le seul cas où on peut court-circuiter le fait de passer par le serveur
+            mutex.acquire();
+            if (debugActivated) {System.out.println("Court-circuitage eventregister possible ! On va regarder si : " + template.toString() + " match avec un tuple sur le cache");}
+
+            Integer size = template.size();
+            Tuple res = null;
+            if (this.cache.containsKey(size)) {
+                Iterator<Tuple> it = this.cache.get(size).iterator();
+                while (it.hasNext()) {
+                    Tuple elmt = it.next();
+                    if (elmt.matches(template)) {
+                        res = elmt;
+                        mutex.release();
+                        if (debugActivated) {System.out.println("On a  " + template.toString() + " a trouvé l'élément : " + res.toString() + " sur le cache");}
+                        court_circuit = true; //On fait en sorte que ça n'envoie rien au serveur
+                        callback.call(res); //Et on déclenche le callback
+                    }
+                }
+            }
+            if (debugActivated) {System.out.println("Court-circuitage du motif " + template.toString() + " a échoué.");}
+            mutex.release();
+        }
+        
+        if (!court_circuit) {
+            //On a pas pu court-circuiter, on envoie le callback au serveur
+            try {
+                CallbackTemplateServer ct = new CallbackTemplateServer(callback, mode, template, this.callbackRemote, callbackID);        
+                this.callbackRemote.add(ct);
+                this.callbackID ++;
+                this.server.eventRegister(mode, timing, template, callback, ct);
+            
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
     }
 
