@@ -85,7 +85,11 @@ public class LindaClient implements Linda  {
     }
 
     @Override
-    public Tuple take(Tuple template) { //TODO
+    /*
+        Rien ne va changer avec l'ajout du cache car on va passer obligatoirement par le serveur pour un take
+        même si il est dans le cache
+    */
+    public Tuple take(Tuple template) {
         try {
             if (debugActivated) {System.out.println("Demande de take du template : " + template.toString());}
             
@@ -144,6 +148,10 @@ public class LindaClient implements Linda  {
     }
 
     @Override
+    /*
+        Rien ne va changer avec l'ajout du cache car on va passer obligatoirement par le serveur pour un take
+        même si il est dans le cache
+    */
     public Tuple tryTake(Tuple template) {
         try {
             if (debugActivated) {System.out.println("Demande de tryTake du template : " + template.toString());}
@@ -167,6 +175,26 @@ public class LindaClient implements Linda  {
         try {
             if (debugActivated) {System.out.println("Demande de tryRead du template : " + template.toString());}
 
+            mutex.acquire();
+            if (debugActivated) {System.out.println("Debut du tryRead du template : " + template.toString() + " sur le cache");}
+
+            Integer size = template.size();
+            Tuple res = null;
+            if (this.cache.containsKey(size)) {
+                Iterator<Tuple> it = this.cache.get(size).iterator();
+                while (it.hasNext()) {
+                    Tuple elmt = it.next();
+                    if (elmt.matches(template)) {
+                        res = elmt;
+                        mutex.release();
+                        if (debugActivated) {System.out.println("Le tryRead du motif " + template.toString() + " a trouvé l'élément : " + res.toString() + " sur le cache");}
+                        return res;
+                    }
+                }
+            }
+            if (debugActivated) {System.out.println("Le tryRead du motif " + template.toString() + " n'a pas trouvé d'élément correspondant sur le cache.");}
+            mutex.release();
+
             Tuple retour = this.server.tryRead(template);
 
             if (debugActivated) {
@@ -182,6 +210,9 @@ public class LindaClient implements Linda  {
     }
 
     @Override
+    /*
+        Rien ne va changer avec l'ajout du cache vu qu'on veut regarder la base de données en entier forcément
+    */
     public Collection<Tuple> takeAll(Tuple template) {
         try {
             if (debugActivated) {System.out.println("Demande de takeAll du template : " + template.toString());}
@@ -201,6 +232,9 @@ public class LindaClient implements Linda  {
     }
 
     @Override
+    /*
+        Rien ne va changer avec l'ajout du cache vu qu'on veut regarder la base de données en entier forcément
+    */
     public Collection<Tuple> readAll(Tuple template) {
         try {
             if (debugActivated) {System.out.println("Demande de readAll du template : " + template.toString());}
