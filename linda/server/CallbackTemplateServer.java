@@ -5,6 +5,8 @@ import java.io.Serializable;
 import linda.*;
 import linda.Linda.eventMode;
 
+// Classe permettant de lier un Callback avec Un CallbackClient
+
 public class CallbackTemplateServer implements Serializable {
     private Callback callback;
     private eventMode mode;

@@ -14,7 +14,7 @@ import java.util.Collection;
  * */
 public class LindaClient implements Linda  {
 
-    private LindaServerInterface server;
+    private LindaServerInterface server; 
     private LindaClientCallback callbackRemote; // "Serveur" des callbacks permettant au serveur de communiquer avec le Client
     public boolean debugActivated = false;
     private int callbackID = 0; // Permet de différencier les différents Callbacks

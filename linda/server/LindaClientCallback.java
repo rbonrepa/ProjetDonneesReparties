@@ -25,7 +25,7 @@ public class LindaClientCallback extends UnicastRemoteObject implements LindaCli
         this.listeCallback.add(callback);
     }
 
-    // Le serveur a matché sur un Template d'un callback, cette méthode vérifie les ids des callbacks et déclence le call si les IDs correspondent
+    // Le serveur a matché sur un Template d'un callback, cette méthode vérifie les ids des callbacks et déclenche le call si les IDs correspondent
     public void callbackCheck(CallbackTemplateServer callback, Tuple t) throws RemoteException {
         Iterator<CallbackTemplateServer> it = this.listeCallback.iterator();
         while (it.hasNext()) {

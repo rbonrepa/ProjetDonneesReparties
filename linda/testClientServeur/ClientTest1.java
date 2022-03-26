@@ -29,7 +29,7 @@ public class ClientTest1 {
         
         Tuple t1 = new Tuple(1);
         client.write(t1);
-        //client.eventRegister(eventMode.READ, eventTiming.FUTURE, new Tuple(Integer.class), new MyCallback());
+        client.eventRegister(eventMode.READ, eventTiming.FUTURE, new Tuple(Integer.class), new MyCallback());
         //System.out.println(t2);
 
     }
