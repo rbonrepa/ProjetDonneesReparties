@@ -43,9 +43,9 @@ public class CentralizedLinda implements Linda {
     }
 
     @Override
-    public  void write(Tuple t) {
+    public void write(Tuple t) {
         //On va accéder à la mémoire partagée donc on bloque toute autre intéraction
-        //pouvant être effectuée dessus par un autre thread
+        //pouvant être effectuée dessus par un autre thread d
 
         if(!(!editing && readerNb== 0 && counterAP == 0 && counterSAS == 0)) {
             try {
