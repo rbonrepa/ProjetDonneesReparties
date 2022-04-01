@@ -159,9 +159,7 @@ public class CentralizedLinda implements Linda {
         this.semaphorespace.add(new SemaphoreTemplate(s, template, eventMode.TAKE));
         //Attente bloquante qu'un élément au motif recherche apparaisse dans la mémoire
         try {
-        editing = false;
-        counterAP--;
-        AP.signal();
+        endEdit();
         s.acquire();
         } 
         catch (InterruptedException e) {
