@@ -43,13 +43,19 @@ public class CentralizedLinda implements Linda {
     }
 
     @Override
-    public synchronized void write(Tuple t) {
+    public  void write(Tuple t) {
         //On va accéder à la mémoire partagée donc on bloque toute autre intéraction
         //pouvant être effectuée dessus par un autre thread
+
         if(!(!editing && readerNb== 0 && counterAP == 0 && counterSAS == 0)) {
             try {
+                monitor.lock();
+                System.out.println("RRRR");
                 counterAP++;
                 AP.await();
+                counterAP--;
+                monitor.unlock();
+                System.out.println("1");
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
@@ -120,7 +126,7 @@ public class CentralizedLinda implements Linda {
 
 
     @Override
-    public synchronized Tuple take(Tuple template) {
+    public  Tuple take(Tuple template) {
         if(!(!editing && readerNb== 0 && counterAP == 0 && counterSAS == 0)) {
             try {
                 counterAP++;
@@ -181,7 +187,7 @@ public class CentralizedLinda implements Linda {
     }
 
     @Override
-    public synchronized Tuple read(Tuple template) {
+    public  Tuple read(Tuple template) {
         if (!(!editing && counterAP == 0 && counterSAS == 0)) {
             try {
                 counterAP++;
@@ -228,7 +234,7 @@ public class CentralizedLinda implements Linda {
     }
 
     @Override
-    public synchronized Tuple tryTake(Tuple template) {
+    public Tuple tryTake(Tuple template) {
         try {
             mutex.acquire();
         } catch (InterruptedException e) {}
@@ -253,7 +259,7 @@ public class CentralizedLinda implements Linda {
     }
 
     @Override
-    public synchronized Tuple tryRead(Tuple template) {
+    public Tuple tryRead(Tuple template) {
         try {
             mutex.acquire();
         } catch (InterruptedException e) {}
@@ -278,7 +284,7 @@ public class CentralizedLinda implements Linda {
     }
 
     @Override
-    public synchronized Collection<Tuple> takeAll(Tuple template) {
+    public Collection<Tuple> takeAll(Tuple template) {
         try {
             mutex.acquire();
         } catch (InterruptedException e) {}
@@ -300,7 +306,7 @@ public class CentralizedLinda implements Linda {
     }
 
     @Override
-    public synchronized Collection<Tuple> readAll(Tuple template) {
+    public Collection<Tuple> readAll(Tuple template) {
         try {
             mutex.acquire();
         } catch (InterruptedException e) {}
@@ -321,7 +327,7 @@ public class CentralizedLinda implements Linda {
     }
 
     @Override
-    public synchronized void eventRegister(eventMode mode, eventTiming timing, Tuple template, Callback callback) {        
+    public void eventRegister(eventMode mode, eventTiming timing, Tuple template, Callback callback) {        
         CallbackTemplate ct = new CallbackTemplate(callback, mode, template);
         this.callbackspace.add(ct);
         if (timing == eventTiming.IMMEDIATE) {
@@ -362,7 +368,8 @@ public class CentralizedLinda implements Linda {
         
     }
 
-    public synchronized void endRead() {
+    public void endRead() {
+        monitor.lock();
         if (readerNb == 0) {
             if (counterSAS > 0) {
                 counterSAS--;
@@ -372,12 +379,15 @@ public class CentralizedLinda implements Linda {
                 AP.signal();
             }
         }
+        monitor.unlock();
     }
 
-    public synchronized void endEdit() {
+    public void endEdit() {
+        monitor.lock();
         editing = false;
-        counterAP--;
         AP.signal();
+        monitor.unlock();
+        System.out.println("End edit");
     }
 
 }
