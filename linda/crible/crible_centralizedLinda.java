@@ -38,7 +38,7 @@ public class crible_centralizedLinda {
         fin = System.nanoTime();
         long output = (fin - départ);
 
-        System.out.println("Temps d'execution: "+ output /1_000000 + "s");
+        System.out.println("Temps d'execution: "+ output /1_000000000 + "s");
         System.out.println("Résultat des nombres premiers inférieurs à " + taille +" : " );
         System.out.println(result);
         //System.out.println(result.size());
