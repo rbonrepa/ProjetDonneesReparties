@@ -4,7 +4,7 @@ import java.util.Random;
 
 import linda.*;
 
-public class TestConcurrence {
+public class TestConcurrenceReadWrite {
 
     public static void main(String[] a) {
                 
@@ -15,11 +15,11 @@ public class TestConcurrence {
             // Ce thread va écrire de nombreux tuples dans l'espace partagé
             public void run() {
                 int i ;
-                for (i = 0 ; i < 100 ; i++ ){
+                for (i = 0 ; i < 1000 ; i++ ){
                     try {
                         Tuple motif = new Tuple(Integer.class, String.class);
                         linda.write(motif);
-                        System.out.println("Write: " + motif);
+                        System.out.println("Write numéro "+i+": " + motif);
                         // On introduit une pause de durée aléatoire pour entrelacer les opérations
                         Random obj = new Random();
                         int nbr = obj.nextInt(500);
@@ -28,6 +28,7 @@ public class TestConcurrence {
                         e.printStackTrace();
                     }
                 }
+                System.out.println("fin des write");
             }
         }.start();
                 
@@ -35,11 +36,11 @@ public class TestConcurrence {
             // Ce thread va lire de nombreux tuples dans l'espace partagé
             public void run() {
                 int i ;
-                for (i = 0 ; i < 100 ; i++ ){
+                for (i = 0 ; i < 1000 ; i++ ){
                     try {
                         Tuple motif = new Tuple(Integer.class, String.class);
                         linda.read(motif);
-                        System.out.println("Read: " + motif);
+                        System.out.println("Read: "+i+": " + motif);
                         // On introduit une pause de durée aléatoire pour entrelacer les opérations
                         Random obj = new Random();
                         int nbr = obj.nextInt(500);
@@ -48,8 +49,8 @@ public class TestConcurrence {
                         e.printStackTrace();
                     }
                 }
+                System.out.println("fin des reads");
             }
         }.start();
-                
     }
 }

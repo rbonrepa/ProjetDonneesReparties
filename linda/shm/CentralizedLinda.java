@@ -46,13 +46,11 @@ public class CentralizedLinda implements Linda {
     public  void write(Tuple t) {
         //On va accéder à la mémoire partagée donc on bloque toute autre intéraction
         //pouvant être effectuée dessus par un autre thread
-        System.out.println("Write starts ; readerNb = " + readerNb);
         if(!(!editing && readerNb== 0 && counterAP == 0 && counterSAS == 0)) {
             try {
                 monitor.lock();
                 counterAP++;
                 AP.await();
-                System.out.println("write unlocks");
                 counterAP--;
                 monitor.unlock();
             } catch (InterruptedException e) {
@@ -189,12 +187,10 @@ public class CentralizedLinda implements Linda {
             try {
                 monitor.lock();
                 counterAP++;
-                System.out.println("Read awaits");
                 AP.await();
                 counterAP--;
                 AP.signal();
                 monitor.unlock();
-                System.out.println("Read unlocks");
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
@@ -370,7 +366,6 @@ public class CentralizedLinda implements Linda {
     }
 
     public void endRead() {
-        System.out.println("end read");
         monitor.lock();
         readerNb--;
         System.out.println(readerNb);
@@ -379,15 +374,13 @@ public class CentralizedLinda implements Linda {
                 counterSAS--;
                 SAS.signal();
             } else {
-                AP.signal();
-                System.out.println("ap signal");
+                AP.signal();;
             }
         }
         monitor.unlock();
     }
 
     public void endEdit() {
-        System.out.println("end edit");
         monitor.lock();
         editing = false;
         AP.signal();
