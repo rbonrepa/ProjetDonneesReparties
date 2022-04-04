@@ -12,17 +12,20 @@ public class BasicTest1 {
         new Thread() {
             public void run() {
                 try {
-                    Thread.sleep(2);
+                    Thread.sleep(1000);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
-                Tuple motif = new Tuple(Integer.class, String.class);
-                Tuple res = linda.take(motif);
-                System.out.println("(1) Resultat:" + res);
-                linda.debug("(1)");
+
+                Tuple t1 = new Tuple(4, 5);
+                linda.write(t1);
+
+                Tuple t11 = new Tuple(4, 5);
+                linda.write(t11);
+
             }
         }.start();
-                
+
         new Thread() {
             public void run() {
                 try {
@@ -31,23 +34,12 @@ public class BasicTest1 {
                     e.printStackTrace();
                 }
 
-                Tuple t1 = new Tuple(4, 5);
-                System.out.println("(2) write: " + t1);
-                linda.write(t1);
+                Tuple t2 = linda.read(new Tuple(Integer.class, Integer.class));
+                Tuple t3 = linda.read(new Tuple(Integer.class, Integer.class));
+                Tuple t4 = linda.read(new Tuple(Integer.class, Integer.class));
+                Tuple t5 = linda.read(new Tuple(Integer.class, Integer.class));
+                Tuple t6 = linda.read(new Tuple(Integer.class, Integer.class));
 
-                Tuple t11 = new Tuple(4, 5);
-                System.out.println("(2) write: " + t11);
-                linda.write(t11);
-
-                Tuple t2 = new Tuple("hello", 15);
-                System.out.println("(2) write: " + t2);
-                linda.write(t2);
-
-                Tuple t3 = new Tuple(4, "foo");
-                System.out.println("(2) write: " + t3);
-                linda.write(t3);
-                                
-                linda.debug("(2)");
 
             }
         }.start();
