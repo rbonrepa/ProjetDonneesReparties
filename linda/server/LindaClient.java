@@ -259,7 +259,9 @@ public class LindaClient implements Linda  {
         boolean court_circuit = false;
         if (timing == eventTiming.IMMEDIATE && mode == eventMode.READ) {
             //C'est le seul cas où on peut court-circuiter le fait de passer par le serveur
-            mutex.acquire();
+            try {
+                mutex.acquire();
+            } catch (InterruptedException e) {}
             if (debugActivated) {System.out.println("Court-circuitage eventregister possible ! On va regarder si : " + template.toString() + " match avec un tuple sur le cache");}
 
             Integer size = template.size();
