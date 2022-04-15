@@ -48,6 +48,7 @@ public class CentralizedLinda implements Linda {
         //pouvant être effectuée dessus par un autre thread
         if(!(!editing && readerNb== 0 && counterAP == 0 && counterSAS == 0)) {
             try {
+                System.out.println(counterAP);
                 monitor.lock();
                 counterAP++;
                 AP.await();
@@ -126,16 +127,22 @@ public class CentralizedLinda implements Linda {
     public  Tuple take(Tuple template) {
         if(!(!editing && readerNb== 0 && counterAP == 0 && counterSAS == 0)) {
             try {
+                monitor.lock();
                 counterAP++;
                 AP.await();
+                counterAP--;
+                monitor.unlock();
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
         }
             if(readerNb > 0) {
             try {
+                monitor.lock();
                 counterSAS++;
                 SAS.await();
+                counterSAS--;
+                monitor.unlock();
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
@@ -368,7 +375,6 @@ public class CentralizedLinda implements Linda {
     public void endRead() {
         monitor.lock();
         readerNb--;
-        System.out.println(readerNb);
         if (readerNb == 0) {
             if (counterSAS > 0) {
                 counterSAS--;

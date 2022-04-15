@@ -17,7 +17,8 @@ public class TestConcurrenceReadWriteTake {
                 int i ;
                 for (i = 0 ; i < 1000 ; i++ ){
                     try {
-                        Tuple motif = new Tuple(Integer.class, String.class);
+                        Tuple motif = new Tuple(i, Integer.toString(i));
+                        System.out.println("Try write");
                         linda.write(motif);
                         System.out.println("Write numéro "+i+": " + motif);
                         // On introduit une pause de durée aléatoire pour entrelacer les opérations
@@ -39,8 +40,9 @@ public class TestConcurrenceReadWriteTake {
                 for (i = 0 ; i < 1000 ; i++ ){
                     try {
                         Tuple motif = new Tuple(Integer.class, String.class);
-                        linda.read(motif);
-                        System.out.println("Read: "+i+": " + motif);
+                        System.out.println("Try reading");
+                        Tuple t = linda.read(motif);
+                        System.out.println("read : " + t);
                         // On introduit une pause de durée aléatoire pour entrelacer les opérations
                         Random obj = new Random();
                         int nbr = obj.nextInt(500);
@@ -60,8 +62,9 @@ public class TestConcurrenceReadWriteTake {
                 for (i = 0 ; i < 1000 ; i++ ){
                     try {
                         Tuple motif = new Tuple(Integer.class, String.class);
+                        System.out.println("Try take");
                         Tuple tuple = linda.take(motif);
-                        System.out.println("Take: "+i+": " + motif);
+                        System.out.println("take : " + tuple);
                         // On introduit une pause de durée aléatoire pour entrelacer les opérations
                         Random obj = new Random();
                         int nbr = obj.nextInt(500);
