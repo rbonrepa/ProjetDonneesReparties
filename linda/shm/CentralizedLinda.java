@@ -4,6 +4,10 @@ import linda.Callback;
 import linda.Linda;
 import linda.Tuple;
 import java.util.*;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
@@ -48,7 +52,6 @@ public class CentralizedLinda implements Linda {
         //pouvant être effectuée dessus par un autre thread
         if(!(!editing && readerNb== 0 && counterAP == 0 && counterSAS == 0)) {
             try {
-                System.out.println(counterAP);
                 monitor.lock();
                 counterAP++;
                 AP.await();
@@ -152,7 +155,15 @@ public class CentralizedLinda implements Linda {
 
         Integer size = template.size();
         if (this.tuplespace.containsKey(size)) {
-            Iterator<Tuple> it = this.tuplespace.get(size).iterator();
+            // Liste des tuples de la taille cherchée
+            List<Tuple> liste = this.tuplespace.get(size);
+            if (liste.size()>=20){
+                List<Tuple> subliste1 = liste.subList(1, 10);
+                List<Tuple> subliste2 = liste.subList(10, 20);
+            }else{
+                Iterator<Tuple> it = liste.iterator();
+            
+            
             while (it.hasNext()) {
                 Tuple elmt = it.next();
                 if (elmt.matches(template)) {
@@ -161,6 +172,7 @@ public class CentralizedLinda implements Linda {
                     return elmt;
                 }
             }
+        }
         }
         //Si on arrive ici, alors le motif n'est pas encore présent dans la mémoire
 
@@ -205,12 +217,27 @@ public class CentralizedLinda implements Linda {
         readerNb++;
         Integer size = template.size();
         if (this.tuplespace.containsKey(size)) {
-            Iterator<Tuple> it = this.tuplespace.get(size).iterator();
-            while (it.hasNext()) {
-                Tuple elmt = it.next();
-                if (elmt.matches(template)) {
-                    endRead();
-                    return elmt;
+            List<Tuple> liste = this.tuplespace.get(size);
+            if (liste.size()>=20){// Inutile de paralléliser si la taille de la liste reste petite
+                // Création d'un pool avec un nombre fixe d'ouvriers égale à la taille donnée/2
+                ExecutorService xs = Executors.newFixedThreadPool(2);
+                List<Future<Tuple>> résultats=new LinkedList<Future<Tuple>>();
+                
+                // Soumissions des tâches
+                for (int i = 1; i<=liste.size(); i = i + 10){
+                    List<Tuple> subListe = liste.subList(i, i+10);
+                    résultats.add(xs.submit(new recherche(template, subListe)));
+                }
+            }
+            else{
+                Iterator<Tuple> it = liste.iterator();
+                while (it.hasNext()) {
+                    Tuple elmt = it.next();
+                    if (elmt.matches(template)) {
+                        it.remove();
+                        endEdit();
+                        return elmt;
+                    }
                 }
             }
        }
@@ -393,4 +420,29 @@ public class CentralizedLinda implements Linda {
         monitor.unlock();
     }
 
+}
+
+class recherche  implements Callable<Tuple> {
+    // pool fixe
+    private Tuple tuple;
+    private List<Tuple> liste;
+
+    recherche(Tuple t, List<Tuple> l) {
+        tuple = t;
+        liste = l;
+    }
+
+    public Tuple call() {
+        // cher her le tuple dans la liste
+        Iterator<Tuple> it = liste.iterator();
+        while (it.hasNext()) {
+            Tuple elmt = it.next();
+            if (elmt.matches(tuple)) {
+                it.remove();
+                //endEdit();
+                return elmt;
+            }
+        }
+        return null;
+    }
 }
