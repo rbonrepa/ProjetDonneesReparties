@@ -9,9 +9,9 @@ public class TestRead {
 
     public static void main(String[] a) {
 
-        // final Linda linda = new linda.shm.CentralizedLinda();
-        final Linda linda  = new LindaClient("//localhost:1099/LindaServer");
-        LindaClient client = new LindaClient("//localhost:1099/LindaServer");
+         final Linda linda = new linda.shm.CentralizedLinda();
+        //final Linda linda  = new LindaClient("//localhost:1099/LindaServer");
+        //LindaClient client = new LindaClient("//localhost:1099/LindaServer");
                 
         new Thread() {
             public void run() {
