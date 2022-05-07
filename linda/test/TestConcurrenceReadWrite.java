@@ -38,7 +38,28 @@ public class TestConcurrenceReadWrite {
                 int i ;
                 for (i = 0 ; i < 1000 ; i++ ){
                     try {
-                        Tuple motif = new Tuple(Integer.class, String.class);
+                        Tuple motif = new Tuple(i+10, Integer.toString(i+10));
+                        Tuple t = linda.read(motif);
+                        System.out.println("read : " + t);
+                        // On introduit une pause de durée aléatoire pour entrelacer les opérations
+                        Random obj = new Random();
+                        int nbr = obj.nextInt(500);
+                        Thread.sleep(nbr);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+                System.out.println("fin des reads");
+            }
+        }.start();
+
+        new Thread() {
+            // Ce thread va lire de nombreux tuples dans l'espace partagé
+            public void run() {
+                int i ;
+                for (i = 0 ; i < 1000 ; i++ ){
+                    try {
+                        Tuple motif = new Tuple(i+10, Integer.toString(i));
                         Tuple t = linda.read(motif);
                         System.out.println("read : " + t);
                         // On introduit une pause de durée aléatoire pour entrelacer les opérations
@@ -53,4 +74,6 @@ public class TestConcurrenceReadWrite {
             }
         }.start();
     }
+
+    
 }

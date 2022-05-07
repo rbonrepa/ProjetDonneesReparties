@@ -50,20 +50,21 @@ public class CentralizedLinda implements Linda {
         if(!(!editing && readerNb== 0 && counterAP == 0 && counterSAS == 0)) {
             try {
                 monitor.lock();
-                System.out.println("RRRR");
                 counterAP++;
                 AP.await();
                 counterAP--;
                 monitor.unlock();
-                System.out.println("1");
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
         }
             if(readerNb > 0) {
             try {
+                monitor.lock();
                 counterSAS++;
                 SAS.await();
+                counterSAS--;
+                monitor.unlock();
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
@@ -126,19 +127,25 @@ public class CentralizedLinda implements Linda {
 
 
     @Override
-    public  Tuple take(Tuple template) {
-        if(!(!editing && readerNb== 0 && counterAP == 0 && counterSAS == 0)) {
+    public Tuple take(Tuple template) {
+        if(!(!editing && readerNb == 0 && counterAP == 0 && counterSAS == 0)) {
             try {
+                monitor.lock();
                 counterAP++;
                 AP.await();
+                counterAP--;
+                monitor.unlock();
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
         }
             if(readerNb > 0) {
             try {
+                monitor.lock();
                 counterSAS++;
                 SAS.await();
+                counterSAS--;
+                monitor.unlock();
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
@@ -172,11 +179,37 @@ public class CentralizedLinda implements Linda {
             e.printStackTrace();
         }
 
+        if(!(!editing && readerNb == 0 && counterAP == 0 && counterSAS == 0)) {
+            try {
+                monitor.lock();
+                counterAP++;
+                AP.await();
+                counterAP--;
+                monitor.unlock();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+            if(readerNb > 0) {
+            try {
+                monitor.lock();
+                counterSAS++;
+                SAS.await();
+                counterSAS--;
+                monitor.unlock();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+        editing = true;
+        
+
         Iterator<Tuple> it = this.tuplespace.get(size).iterator();
         while (it.hasNext()) {
             Tuple elmt = it.next();
              if (elmt.matches(template)) {
                 it.remove();
+                endEdit();
                 return elmt;
             }
         }
@@ -188,14 +221,16 @@ public class CentralizedLinda implements Linda {
     public  Tuple read(Tuple template) {
         if (!(!editing && counterAP == 0 && counterSAS == 0)) {
             try {
+                monitor.lock();
                 counterAP++;
                 AP.await();
+                counterAP--;
+                AP.signal();
+                monitor.unlock();
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
         }
-        counterAP--;
-        AP.signal();
         readerNb++;
         Integer size = template.size();
         if (this.tuplespace.containsKey(size)) {
@@ -221,10 +256,25 @@ public class CentralizedLinda implements Linda {
             e.printStackTrace();
         }
 
+        if (!(!editing && counterAP == 0 && counterSAS == 0)) {
+            try {
+                monitor.lock();
+                counterAP++;
+                AP.await();
+                counterAP--;
+                AP.signal();
+                monitor.unlock();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+
+        readerNb++;
         Iterator<Tuple> it = this.tuplespace.get(size).iterator();
         while (it.hasNext()) {
             Tuple elmt = it.next();
              if (elmt.matches(template)) {
+                 endRead();
                  return elmt;
             }
         }
@@ -368,16 +418,18 @@ public class CentralizedLinda implements Linda {
 
     public void endRead() {
         monitor.lock();
+        readerNb--;
         if (readerNb == 0) {
             if (counterSAS > 0) {
-                counterSAS--;
-                SAS.signal();
+                System.out.println("SAS signal");
+                SAS.signal();           
             } else {
-                counterAP--;
+                System.out.println("AP signal");
                 AP.signal();
             }
         }
         monitor.unlock();
+        System.out.println("End read");
     }
 
     public void endEdit() {
