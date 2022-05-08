@@ -8,7 +8,7 @@ public class TestConcurrenceReadWrite {
 
     public static void main(String[] a) {
                 
-        final Linda linda = new linda.shm.CentralizedLinda();
+        final Linda linda = new linda.shm.CentralizedLindaParallel();
         // final Linda linda = new linda.server.LindaClient("//localhost:4000/aaa");
                 
         new Thread() {

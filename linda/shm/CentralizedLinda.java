@@ -4,6 +4,7 @@ import linda.Callback;
 import linda.Linda;
 import linda.Tuple;
 import java.util.*;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
@@ -25,6 +26,8 @@ public class CentralizedLinda implements Linda {
     private Condition SAS;
     private int counterAP = 0;
     private int counterSAS = 0;
+    private ForkJoinPool pool = new ForkJoinPool();
+
 
     //Utilisé pour que l'accès à la mémoire partagée se fasse par
     //un seul thread en même temps
