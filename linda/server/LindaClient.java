@@ -13,11 +13,12 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Semaphore;
+import java.io.Serializable;
 
 /** Client part of a client/server implementation of Linda.
  * It implements the Linda interface and propagates everything to the server it is connected to.
  * */
-public class LindaClient implements Linda  {
+public class LindaClient implements Linda, Serializable  {
 
     private LindaServerInterface server; 
     private LindaClientCallback callbackRemote; // "Serveur" des callbacks permettant au serveur de communiquer avec le Client

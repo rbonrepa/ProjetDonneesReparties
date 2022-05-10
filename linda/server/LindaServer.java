@@ -95,7 +95,7 @@ public class LindaServer extends UnicastRemoteObject implements LindaServerInter
         }
     }
 
-    public Tuple take(Tuple t) throws java.rmi.RemoteException {
+    public Tuple take(Tuple template) throws java.rmi.RemoteException {
         try {
             if (debugActivated) {System.out.println("Demande de take de " + template.toString() + " en attente.");}
             mutex.acquire();
