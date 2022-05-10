@@ -410,11 +410,11 @@ public class CentralizedLinda implements Linda {
         if (prefix.equals("callback")){
             for(CallbackTemplate t: callbackspace)
             {
-                System.out.println (t.getTuple());
+                //System.out.println (t.getTuple());
             }
         }
         else{
-            System.out.println(tuplespace);
+            //System.out.println(tuplespace);
         }
         
     }
@@ -424,15 +424,15 @@ public class CentralizedLinda implements Linda {
         readerNb--;
         if (readerNb == 0) {
             if (counterSAS > 0) {
-                System.out.println("SAS signal");
+                //System.out.println("SAS signal");
                 SAS.signal();           
             } else {
-                System.out.println("AP signal");
+                //System.out.println("AP signal");
                 AP.signal();
             }
         }
         monitor.unlock();
-        System.out.println("End read");
+        //System.out.println("End read");
     }
 
     public void endEdit() {
@@ -440,7 +440,7 @@ public class CentralizedLinda implements Linda {
         editing = false;
         AP.signal();
         monitor.unlock();
-        System.out.println("End edit");
+        //System.out.println("End edit");
     }
 
     
