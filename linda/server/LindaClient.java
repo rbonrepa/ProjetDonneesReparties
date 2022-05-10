@@ -27,19 +27,22 @@ public class LindaClient implements Linda  {
     private Map<Integer,List<Tuple>> cache;  //liste des tuples du cache client
     private Semaphore mutex;  //On rajoute une sémaphore car la mémoire du client est partagée maintenant
 
+    private static enum etiquette {
+        UNIQUE;
+    }
     /** Initializes the Linda implementation.
      *  @param serverURI the URI of the server, e.g. "rmi://localhost:4000/LindaServer" or "//localhost:4000/LindaServer".
      */
     public LindaClient(String serverURI) {        
         try {
             if (debugActivated) {System.out.println("Tentative de connexion au serveur ...");}
-            
+
             this.cache = new HashMap<>();
             this.mutex = new Semaphore(1);
 
             this.callbackRemote = new LindaClientCallback();
             this.server = (LindaServerInterface) Naming.lookup(serverURI);
-            
+
             if (debugActivated) {
                 System.out.println("Connexion au serveur réussie !");
                 System.out.println("");
@@ -67,7 +70,18 @@ public class LindaClient implements Linda  {
                 this.cache.put(size,new ArrayList<Tuple>());
                 this.cache.get(size).add(t);
             }
+            Callback callB = new Callback() {
+
+                @Override
+                public void call (Tuple tu) {
+                    cache.remove(t);
+                }
+            };
+            // callback qui se déclenche dès qu'un autre client écrit le tuple T
+            // Déclenche la suppression de T dans le casche du premier client
+            this.server.eventRegister(eventMode.TAKE, eventTiming.FUTURE, new Tuple (t, etiquette.UNIQUE), callB, new CallbackTemplateServer(callB,eventMode.READ,t,this.callbackRemote,callbackID));
             mutex.release();
+
             if (debugActivated) {System.out.println("Ecriture de " + t.toString() + "sur le cache faite !");}
     
             if (debugActivated) {System.out.println("Demande d'écriture du Tuple : " + t.toString() + " sur le serveur");}
@@ -94,6 +108,9 @@ public class LindaClient implements Linda  {
             if (debugActivated) {System.out.println("Demande de take du template : " + template.toString());}
             
             Tuple retour = this.server.take(template);
+            // OIn écrit un tuple dans la mémoire qui va déclencher le callback placé lors de l'écriture. 
+            this.server.write(new Tuple (retour, etiquette.UNIQUE));
+
 
             if (debugActivated) {
                 System.out.println("Take du template : " + template.toString() + " fait !");
@@ -157,6 +174,11 @@ public class LindaClient implements Linda  {
             if (debugActivated) {System.out.println("Demande de tryTake du template : " + template.toString());}
 
             Tuple retour = this.server.tryTake(template);
+            // OIn écrit un tuple dans la mémoire qui va déclencher le callback placé lors de l'écriture. 
+            if (retour != null) {
+                this.server.write(new Tuple (retour, etiquette.UNIQUE));
+            }
+
 
             if (debugActivated) {
                 System.out.println("tryTake du template : " + template.toString() + " fait !");
@@ -290,7 +312,6 @@ public class LindaClient implements Linda  {
                 this.callbackRemote.add(ct);
                 this.callbackID ++;
                 this.server.eventRegister(mode, timing, template, callback, ct);
-            
             } catch (Exception e) {
                 e.printStackTrace();
             }
