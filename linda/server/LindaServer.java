@@ -103,13 +103,13 @@ public class LindaServer extends UnicastRemoteObject implements LindaServerInter
             mutex.acquire();
         } catch (InterruptedException e1) {}
 
-        if (this.cache.containsKey(t.size())) {
-            Iterator<Tuple> it = this.cache.get(t.size()).iterator();
+        if (this.cache.containsKey(template.size())) {
+            Iterator<Tuple> it = this.cache.get(template.size()).iterator();
             while (it.hasNext()) {
                 Tuple elmt = it.next();
                 if (elmt.matches(template)) {
                     it.remove();
-                    removeIfKeyEmpty(t.size());
+                    removeIfKeyEmpty(template.size());
                     mutex.release();
                     if (debugActivated) {System.out.println("Le motif " + template.toString() + " est déjà présent dans la mémoire, take de l'élément : " + elmt.toString());}
                     return elmt;
@@ -138,12 +138,12 @@ public class LindaServer extends UnicastRemoteObject implements LindaServerInter
 
         {System.out.println("Le motif " + template.toString() + " est apparu dans la mémoire, un take va s'effectuer");}
 
-        Iterator<Tuple> it = this.cache.get(t.size()).iterator();
+        Iterator<Tuple> it = this.cache.get(template.size()).iterator();
         while (it.hasNext()) {
             Tuple elmt = it.next();
              if (elmt.matches(template)) {
                 it.remove();
-                removeIfKeyEmpty(t.size());
+                removeIfKeyEmpty(template.size());
                 mutex.release();
                 if (debugActivated) {
                     System.out.println("Le motif " + template.toString() + " a take l'élément : " + elmt.toString());
@@ -161,8 +161,8 @@ public class LindaServer extends UnicastRemoteObject implements LindaServerInter
             if (debugActivated) {System.out.println("Demande de read de " + template.toString() + " en attente.");}
             mutex.acquire();
         } catch (InterruptedException e1) {}
-        if (this.cache.containsKey(t.size())) {
-            Iterator<Tuple> it = this.cache.get(t.size()).iterator();
+        if (this.cache.containsKey(template.size())) {
+            Iterator<Tuple> it = this.cache.get(template.size()).iterator();
             while (it.hasNext()) {
                 Tuple elmt = it.next();
                 if (elmt.matches(template)) {
@@ -194,7 +194,7 @@ public class LindaServer extends UnicastRemoteObject implements LindaServerInter
 
         {System.out.println("Le motif " + template.toString() + " est apparu dans la mémoire, un read va s'effectuer");}
 
-        Iterator<Tuple> it = this.cache.get(t.size()).iterator();
+        Iterator<Tuple> it = this.cache.get(template.size()).iterator();
         while (it.hasNext()) {
             Tuple elmt = it.next();
             if (elmt.matches(template)) {
@@ -211,13 +211,13 @@ public class LindaServer extends UnicastRemoteObject implements LindaServerInter
             mutex.acquire();
         } catch (InterruptedException e) {}
         Tuple res = null;
-        if (this.cache.containsKey(t.size())) {
-            Iterator<Tuple> it = this.cache.get(t.size()).iterator();
+        if (this.cache.containsKey(template.size())) {
+            Iterator<Tuple> it = this.cache.get(template.size()).iterator();
             while (it.hasNext()) {
                 Tuple elmt = it.next();
                 if (elmt.matches(template)) {
                     it.remove();
-                    removeIfKeyEmpty(t.size());
+                    removeIfKeyEmpty(template.size());
                     res = elmt;
                     mutex.release();
                     if (debugActivated) {
@@ -244,8 +244,8 @@ public class LindaServer extends UnicastRemoteObject implements LindaServerInter
         } catch (InterruptedException e) {}
 
         Tuple res = null;
-        if (this.cache.containsKey(t.size())) {
-            Iterator<Tuple> it = this.cache.get(t.size()).iterator();
+        if (this.cache.containsKey(template.size())) {
+            Iterator<Tuple> it = this.cache.get(template.size()).iterator();
             while (it.hasNext()) {
                 Tuple elmt = it.next();
                 if (elmt.matches(template)) {
@@ -270,14 +270,14 @@ public class LindaServer extends UnicastRemoteObject implements LindaServerInter
         } catch (InterruptedException e) {}
 
         ArrayList<Tuple> res = new ArrayList<>();
-        if (this.cache.containsKey(t.size())) {
-            Iterator<Tuple> it = this.cache.get(t.size()).iterator();
+        if (this.cache.containsKey(template.size())) {
+            Iterator<Tuple> it = this.cache.get(template.size()).iterator();
             while (it.hasNext()) {
                 Tuple elmt = it.next();
                 if (elmt.matches(template)) {
                     res.add(elmt);
                     it.remove();
-                    removeIfKeyEmpty(t.size());
+                    removeIfKeyEmpty(template.size());
                 }
             }
         }
@@ -296,8 +296,8 @@ public class LindaServer extends UnicastRemoteObject implements LindaServerInter
         } catch (InterruptedException e) {}
 
         ArrayList<Tuple> res = new ArrayList<>();
-        if (this.cache.containsKey(t.size())) {
-            Iterator<Tuple> it = this.cache.get(t.size()).iterator();
+        if (this.cache.containsKey(template.size())) {
+            Iterator<Tuple> it = this.cache.get(template.size()).iterator();
             while (it.hasNext()) {
                 Tuple elmt = it.next();
                 if (elmt.matches(template)) {
@@ -319,14 +319,14 @@ public class LindaServer extends UnicastRemoteObject implements LindaServerInter
     }
 
     private void callbackCheck(CallbackTemplateServer ct) {
-        if (this.cache.containsKey(t.size())) {
-            Iterator<Tuple> it = this.cache.get(t.size()).iterator();
+        if (this.cache.containsKey(ct.size())) {
+            Iterator<Tuple> it = this.cache.get(ct.size()).iterator();
             while (it.hasNext()) {
                 Tuple elmt = it.next();
                 if (elmt.matches(ct.getTuple())) {
                     if (ct.getMode() == eventMode.TAKE){
                         it.remove();
-                        removeIfKeyEmpty(t.size());
+                        removeIfKeyEmpty(ct.size());
                     }
                     try {
                         ct.getClient().callbackCheck(ct, elmt); // Il y a un match, on déclenche le callbackCheck côté client

@@ -78,7 +78,7 @@ public class LindaClient implements Linda  {
                 }
             };
             // callback qui se déclenche dès qu'un autre client écrit le tuple T
-            // Déclenche la suppression de T dans le casche du premier client
+            // Déclenche la suppression de T dans le cache du premier client
             this.server.eventRegister(eventMode.TAKE, eventTiming.FUTURE, new Tuple (t, etiquette.UNIQUE), callB, new CallbackTemplateServer(callB,eventMode.READ,t,this.callbackRemote,callbackID));
             mutex.release();
 
@@ -108,7 +108,7 @@ public class LindaClient implements Linda  {
             if (debugActivated) {System.out.println("Demande de take du template : " + template.toString());}
             
             Tuple retour = this.server.take(template);
-            // OIn écrit un tuple dans la mémoire qui va déclencher le callback placé lors de l'écriture. 
+            // On écrit un tuple dans la mémoire qui va déclencher le callback placé lors de l'écriture. 
             this.server.write(new Tuple (retour, etiquette.UNIQUE));
 
 
