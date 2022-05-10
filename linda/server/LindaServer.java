@@ -319,14 +319,15 @@ public class LindaServer extends UnicastRemoteObject implements LindaServerInter
     }
 
     private void callbackCheck(CallbackTemplateServer ct) {
-        if (this.cache.containsKey(ct.size())) {
-            Iterator<Tuple> it = this.cache.get(ct.size()).iterator();
+        Integer size = ct.getTuple().size();
+        if (this.cache.containsKey(size)) {
+            Iterator<Tuple> it = this.cache.get(size).iterator();
             while (it.hasNext()) {
                 Tuple elmt = it.next();
                 if (elmt.matches(ct.getTuple())) {
                     if (ct.getMode() == eventMode.TAKE){
                         it.remove();
-                        removeIfKeyEmpty(ct.size());
+                        removeIfKeyEmpty(size);
                     }
                     try {
                         ct.getClient().callbackCheck(ct, elmt); // Il y a un match, on déclenche le callbackCheck côté client
