@@ -44,7 +44,7 @@ public class crible_sequentiel {
 
         System.out.println("Temps d'execution: "+ output /1_000000 + "s");
         System.out.println("Résultat des nombres premiers inférieurs à " + taille +" : " );
-        System.out.println(liste);
+        //System.out.println(liste);
         //System.out.println(liste.size());
     }
 }
