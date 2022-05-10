@@ -26,7 +26,7 @@ public class crible_centralizedLinda {
         int taille = Integer.parseInt(args[0]);
 
         // On écrit dans la mémoire tous les nombres jusqu'à la taille donnée
-        final Linda linda = new linda.shm.CentralizedLinda();
+        final Linda linda = new linda.shm.CentralizedLindaParallel();
         initialisation(taille, linda);
 
         // Création d'un pool avec un nombre fixe d'ouvriers égale à la taille donnée/2

@@ -5,7 +5,6 @@ import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.*;
 import java.util.concurrent.Semaphore;
-
 import linda.Callback;
 import linda.Tuple;
 import linda.Linda.*;
@@ -14,7 +13,6 @@ import linda.shm.CallbackTemplate;
 
 public class LindaServer extends UnicastRemoteObject implements LindaServerInterface{
 
-    // TODO
     // STRUCTURE de données pour les occurences des tuples
     // MAP de Integer (size) x MAP ()
     private Map<Integer,List<Tuple>> cache;  //liste des tuples en mémoire partagée
@@ -97,7 +95,7 @@ public class LindaServer extends UnicastRemoteObject implements LindaServerInter
         }
     }
 
-    public Tuple take(Tuple template) throws java.rmi.RemoteException {
+    public Tuple take(Tuple t) throws java.rmi.RemoteException {
         try {
             if (debugActivated) {System.out.println("Demande de take de " + template.toString() + " en attente.");}
             mutex.acquire();
