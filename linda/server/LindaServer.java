@@ -97,19 +97,19 @@ public class LindaServer extends UnicastRemoteObject implements LindaServerInter
 
     public Tuple take(Tuple t) throws java.rmi.RemoteException {
         try {
-            if (debugActivated) {System.out.println("Demande de take de " + template.toString() + " en attente.");}
+            if (debugActivated) {System.out.println("Demande de take de " + t.toString() + " en attente.");}
             mutex.acquire();
         } catch (InterruptedException e1) {}
 
-        if (this.cache.containsKey(template.size())) {
-            Iterator<Tuple> it = this.cache.get(template.size()).iterator();
+        if (this.cache.containsKey(t.size())) {
+            Iterator<Tuple> it = this.cache.get(t.size()).iterator();
             while (it.hasNext()) {
                 Tuple elmt = it.next();
-                if (elmt.matches(template)) {
+                if (elmt.matches(t)) {
                     it.remove();
-                    removeIfKeyEmpty(template.size());
+                    removeIfKeyEmpty(t.size());
                     mutex.release();
-                    if (debugActivated) {System.out.println("Le motif " + template.toString() + " est déjà présent dans la mémoire, take de l'élément : " + elmt.toString());}
+                    if (debugActivated) {System.out.println("Le motif " + t.toString() + " est déjà présent dans la mémoire, take de l'élément : " + elmt.toString());}
                     return elmt;
                 }
             }
@@ -119,7 +119,7 @@ public class LindaServer extends UnicastRemoteObject implements LindaServerInter
 
         //On fait une attente bloquante
         Semaphore s = new Semaphore(0);
-        this.semaphorespace.add(new SemaphoreTemplate(s, template, eventMode.TAKE));
+        this.semaphorespace.add(new SemaphoreTemplate(s, t, eventMode.TAKE));
         
         //Attente bloquante qu'un élément au motif recherche apparaisse dans la mémoire
         if (debugActivated) {System.out.println("Le motif n'est pas présent dans la mémoire --> take mis en attente.");}
@@ -134,17 +134,17 @@ public class LindaServer extends UnicastRemoteObject implements LindaServerInter
             mutex.acquire();
         } catch (InterruptedException e) {}
 
-        {System.out.println("Le motif " + template.toString() + " est apparu dans la mémoire, un take va s'effectuer");}
+        {System.out.println("Le motif " + t.toString() + " est apparu dans la mémoire, un take va s'effectuer");}
 
-        Iterator<Tuple> it = this.cache.get(template.size()).iterator();
+        Iterator<Tuple> it = this.cache.get(t.size()).iterator();
         while (it.hasNext()) {
             Tuple elmt = it.next();
-             if (elmt.matches(template)) {
+             if (elmt.matches(t)) {
                 it.remove();
-                removeIfKeyEmpty(template.size());
+                removeIfKeyEmpty(t.size());
                 mutex.release();
                 if (debugActivated) {
-                    System.out.println("Le motif " + template.toString() + " a take l'élément : " + elmt.toString());
+                    System.out.println("Le motif " + t.toString() + " a take l'élément : " + elmt.toString());
                     System.out.print("Etat cache : ");
                     debug("");
                 }

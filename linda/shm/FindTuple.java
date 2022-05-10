@@ -15,9 +15,10 @@ import java.util.concurrent.RecursiveTask;
 import linda.Tuple;
 
 class FindTuple extends RecursiveTask<IndexedTuple> {
-    // pool fixe
     private Tuple tuple;
     private List<Tuple> liste;
+
+    // RecursiveTask retournant un Tuple matchant avec le template ou null
 
     FindTuple(Tuple t, List<Tuple> l) {
         tuple = t;

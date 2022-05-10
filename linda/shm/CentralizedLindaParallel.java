@@ -3,11 +3,14 @@ package linda.shm;
 import linda.Callback;
 import linda.Linda;
 import linda.Tuple;
+
+import java.lang.reflect.Array;
 import java.util.*;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.stream.Collectors;
 
 import javax.management.monitor.Monitor;
 
@@ -282,95 +285,73 @@ public class CentralizedLindaParallel implements Linda {
 
     @Override
     public Tuple tryTake(Tuple template) {
-        try {
-            mutex.acquire();
-        } catch (InterruptedException e) {}
+        monitor.lock();
         Integer size = template.size();
-        Tuple res = null;
+        IndexedTuple res = new IndexedTuple(0, null);
         if (this.tuplespace.containsKey(size)) {
-             Iterator<Tuple> it = this.tuplespace.get(size).iterator();
-             while (it.hasNext()) {
-                 Tuple elmt = it.next();
-                 if (elmt.matches(template)) {
-                     it.remove();
-                     res = elmt;
-                     mutex.release();
-                     return res;
-                 }
-             }
-             mutex.release();
-             return res;
+            FindTuple finder = new FindTuple(template, tuplespace.get(size));
+            res = pool.invoke(finder);
+            if (res.getTuple() != null) {
+                tuplespace.get(size).remove(res.getIndex());
+            }
+            monitor.unlock();
+            return res.getTuple();
         }
-        mutex.release();
-        return res;
+        monitor.unlock();
+        return res.getTuple();
     }
 
     @Override
     public Tuple tryRead(Tuple template) {
-        try {
-            mutex.acquire();
-        } catch (InterruptedException e) {}
-
+        monitor.lock();
         Integer size = template.size();
-        Tuple res = null;
+        IndexedTuple res = new IndexedTuple(0, null);
         if (this.tuplespace.containsKey(size)) {
-             Iterator<Tuple> it = this.tuplespace.get(size).iterator();
-             while (it.hasNext()) {
-                 Tuple elmt = it.next();
-                 if (elmt.matches(template)) {
-                     res = elmt;
-                     mutex.release();
-                     return res;
-                 }
-             }
-             mutex.release();
-             return res;
+            FindTuple finder = new FindTuple(template, tuplespace.get(size));
+            res = pool.invoke(finder);
+            monitor.unlock();
+            return res.getTuple();
         }
         mutex.release();
-        return res;
+        return res.getTuple();
     }
 
     @Override
     public Collection<Tuple> takeAll(Tuple template) {
-        try {
-            mutex.acquire();
-        } catch (InterruptedException e) {}
-
+        monitor.lock();
         Integer size = template.size();
-        ArrayList<Tuple> res = new ArrayList<>();
+        ArrayList<IndexedTuple> res1 = new ArrayList<>();
+        List<Tuple> res2 = new ArrayList<>();
         if (this.tuplespace.containsKey(size)) {
-            Iterator<Tuple> it = this.tuplespace.get(size).iterator();
+            FindMultipleTuple finder = new FindMultipleTuple(template, tuplespace.get(size));
+            res1 = pool.invoke(finder);
+            res2 = res1.stream().map(t -> t.getTuple()).collect(Collectors.toList());
+            Iterator<IndexedTuple> it = res1.iterator();
+            List<Tuple> space = tuplespace.get(size);
             while (it.hasNext()) {
-                Tuple elmt = it.next();
-                if (elmt.matches(template)) {
-                    res.add(elmt);
-                    it.remove();
-                }
+                IndexedTuple elmt = it.next();
+                space.remove(elmt.index);
             }
+            monitor.unlock();
+            return res2;
         }
-        mutex.release();
-        return res;
+        monitor.unlock();
+        return res2;
     }
 
     @Override
     public Collection<Tuple> readAll(Tuple template) {
-        try {
-            mutex.acquire();
-        } catch (InterruptedException e) {}
-
+        monitor.lock();
         Integer size = template.size();
-        ArrayList<Tuple> res = new ArrayList<>();
+        ArrayList<IndexedTuple> res = new ArrayList<>();
         if (this.tuplespace.containsKey(size)) {
-            Iterator<Tuple> it = this.tuplespace.get(size).iterator();
-            while (it.hasNext()) {
-                Tuple elmt = it.next();
-                if (elmt.matches(template)) {
-                    res.add(elmt);
-                }
-            }
+            FindMultipleTuple finder = new FindMultipleTuple(template, tuplespace.get(size));
+            res = pool.invoke(finder);
+            monitor.unlock();
+            return res.stream().map(t -> t.getTuple()).collect(Collectors.toList());
         }
-        mutex.release();
-        return res;
+        monitor.unlock();
+        return new ArrayList<Tuple>();
     }
 
     @Override
@@ -420,15 +401,15 @@ public class CentralizedLindaParallel implements Linda {
         readerNb--;
         if (readerNb == 0) {
             if (counterSAS > 0) {
-                //System.out.println("SAS signal");
+                System.out.println("SAS signal");
                 SAS.signal();           
             } else {
-                //System.out.println("AP signal");
+                System.out.println("AP signal");
                 AP.signal();
             }
         }
         monitor.unlock();
-        //System.out.println("End read");
+        System.out.println("End read");
     }
 
     public void endEdit() {
@@ -436,7 +417,7 @@ public class CentralizedLindaParallel implements Linda {
         editing = false;
         AP.signal();
         monitor.unlock();
-        //System.out.println("End edit");
+        System.out.println("End edit");
     }
 
     
